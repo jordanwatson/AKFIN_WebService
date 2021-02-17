@@ -26,6 +26,9 @@ Blah blah blah regions regions regions.
 library(httr)
 library(tidyverse)
 library(lubridate)
+library(sp)
+library(rgdal)
+library(ggrepel)
 ```
 
 
@@ -173,4 +176,25 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
   geom_line() + 
   geom_smooth() +
   facet_wrap(~NMFSAREA)
+```
+
+One could create a map of NMFS areas for reference from the "simplemfs" shapefile
+```{r}
+simplenmfs <- readOGR(dsn="Data",layer="simplenmfs")
+nmfs.df <- merge(fortify(simplenmfs), as.data.frame(simplenmfs), by.x="id", by.y=0)
+ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
+  geom_polygon(fill=NA,color="black") +
+  theme_bw()
+
+```
+
+And the map would probably be more useful with labels.
+
+```{r}
+nmfs_reg<-aggregate(cbind(long, lat) ~ REP_AREA, data=nmfs.df, FUN=mean)
+ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
+  geom_polygon(fill=NA,color="black") +
+  geom_label_repel(data = nmfs_reg, aes(x = long, y = lat, label = REP_AREA), size = 4, color="red", inherit.aes = FALSE)+
+  theme_bw()
+ 
 ```
