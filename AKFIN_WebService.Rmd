@@ -9,9 +9,41 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
 ```
 
-Satellite SST data from the NOAA Coral Reef Watch Program were accessed via the NOAA Coast Watch West Coast Node ERDDAP server (https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.html) for April 1985 - September 2020.  Detailed methods are online, including maps of the spatial strata and processing the data in R (github.com/jordanwatson/EcosystemStatusReports/tree/master/SST).
+Satellite data provide information across broad spatial and temporal extents. These data are often valuable for linkage with biological or fishery data for connection to stock assessments or other fishery evaluations. In recent years, access to these satellite data has expanded dramatically, enabling users to easily query and download a suite of environmental datasets in gridded forms through user-friendly interfaces like ERDAPP data servers (https://coastwatch.pfeg.noaa.gov/erddap/index.html). One limitation to the basic ERDDAP functionality is that users must specify spatial extents of their data downloads in rectangular polygons. Supplementary tools have been created (e.g., the R package "rerddapXtracto",https://cran.r-project.org/web/packages/rerddapXtracto/) that include workarounds to this limitation but some bottlenecks still remain. For example, many users may be interested simply in a time series of daily, weekly, or monthly average sea surface temperatures (SST) across their spatial extent of interest. To extract this information using the rerddapXtracto or the ERDDAP interfaces, a user must first download all of the individual SST temperature values across their spatial grid before they can then calculate the single average SST value of interest. Such an operation can be time-consuming because the Alaska SST grid, for example, contains more than 200,000 SST records for each day. This time consuming operation may also be inefficient if the end user simply wants to aggregate the data across large spatial areas.
 
-The CRW dataset is available through multiple different ERDDAPs. The CRW dataset is currently only available (as far as I know) with longitudes -180 to 180 (as opposed to 0 to 360) so we pull the data in two separate chunks, a positive and negative longitude pull. I am only downloading the CRW_SST column but there are other columns that may be of interest to others (e.g., sst anomaly and sea ice). For more information, visit the Coastwatch site (https://coastwatch.pfeg.noaa.gov/erddap/griddap/NOAA_DHW.html) or the Coral Reef Watch site (https://coralreefwatch.noaa.gov/).
+The Alaska Fisheries Science Center worked with the Alaska Fisheries Information Network (AKFIN) at Pacific States Marine Fisheries Commission to develop a more efficient data extraction process for spatial strata that are commonly used by Alaska scientists. Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily (https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km) for the entire spatial extent of the U.S. exclusive economic zone around Alaska. These daily data downloads (01 Apr 1985 - present) are stored on the backend of the AKFIN database server. The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, or polygons. These strata include each of the NMFS management areas (Fig. 1) and each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council (Fig. 2 WAITING FOR BRETT'S SHAPEFILE ON THIS).   
+
+
+```{r echo=FALSE, fig.cap="Map of the NMFS management areas for Alaska, illustrating each of the NMFS spatial strata for which SST data are averaged daily."}
+simplenmfs <- readOGR(dsn="Data",layer="simplenmfs")
+nmfs.df <- merge(fortify(simplenmfs), as.data.frame(simplenmfs), by.x="id", by.y=0)
+# ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
+#   geom_polygon(fill=NA,color="black") +
+#   theme_bw()
+
+nmfs_reg<-aggregate(cbind(long, lat) ~ REP_AREA, data=nmfs.df, FUN=mean)
+ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
+  geom_polygon(fill=NA,color="black") +
+  geom_label_repel(data = nmfs_reg, aes(x = long, y = lat, label = REP_AREA), size = 4, color="red", inherit.aes = FALSE)+
+  theme_bw()
+```
+
+
+```{r eval=FALSE, echo=FALSE, fig.cap="Map of the ecosystem regions for Alaska, illustrating each of the ecosystem spatial strata for which SST data are averaged daily."}
+# For now this is set to eval=FALSE because we don't have this shapefile from Brett yet.
+ecosystems <- readOGR(dsn="Data",layer="XXXX")
+ecosystems.df <- merge(fortify(ecosystems), as.data.frame(ecosystems), by.x="id", by.y=0)
+# ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
+#   geom_polygon(fill=NA,color="black") +
+#   theme_bw()
+
+ecosystems_reg<-aggregate(cbind(long, lat) ~ Ecosystem_sub, data=ecosystems.df, FUN=mean)
+ggplot(data = ecosystems.df, aes(x=long, y=lat, group = group)) +
+  geom_polygon(fill=NA,color="black") +
+  geom_label_repel(data = ecosystems_reg, aes(x = long, y = lat, label = Ecosystem_sub), size = 4, color="red", inherit.aes = FALSE)+
+  theme_bw()
+```
+
 
 ## Web Service
 AKFIN has created a set of web services or web APIs for accessing the pre-summarized / spatially aggregated data for a set of different ecosystem and management areas. AKFIN downloads the CRW satellite SST dataset daily for the spatial extent of Alaska. Files are downloaded daily as two separate netCDF files - one for positive and one for negative longitudes. The daily data are then clipped by merging them with a spatial lookup table that encompasses the exclusive economic zone (EEZ) of Alaska. The data are merged into a single daily gridded dataset that includes 212,813 temperature records for each day. We have identified several spatial strata that are of particular interest from either the ecosystem or management perspective. These fields in the data are referred to as *Ecosystem_sub* or *nmfsarea*. The goal of the AKFIN web service is to streamline access to the average daily temperatures within each of the relevant strata.
@@ -51,7 +83,7 @@ The web service simply enables us to query data using a URL, where the URL itsel
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json")
 ```
  
-Instead of a list, these data can easily be converted to a data frame. 
+Instead of a list, these data can easily be converted to a data frame (tibble). Note that we use "bind_rows" here instead of data.frame. This will have the same effect as data.frame but means we will not have to change the code when more dates are added in subsequent examples.
 
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json") %>% 
@@ -59,13 +91,6 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_
 ```
 
 To query multiple values of a parameter, separate the values by a comma. For example, to query the Southeastern and the Northern Bering Sea data:
-
-```{r}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea,Northern%20Bering%20Sea'), type = "application/json") %>% 
-  data.frame
-```
-
-Note that this was not likely the desired format for your output. It has created a new set of columns for each of the parameter values. To get these data in long format instead, bind the rows together, as though you are collapsing a list. 
 
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea,Northern%20Bering%20Sea'), type = "application/json") %>% 
@@ -87,20 +112,18 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_
   bind_rows 
 ```
 
-You can also specify a custom date period. Most users will want to query the entire duration of the time series, which for the CRW SST dataset begins on 1985-04-01. This start may soon be revised forward to 1985-01-01. To query a specific range, specify the "start_date" and "end_date". I'll just show a snippet of this next code chunk because it will put the data into columns instead of rows...about 65,000 columns.
+You can also specify a custom date period. Most users will want to query the entire duration of the time series, which for the CRW SST dataset begins on 1985-04-01. This start may soon be revised forward to 1985-01-01. To query a specific range, specify the "start_date" and "end_date". 
 
 ```{r,eval=FALSE}
-data <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska&start_date=19850401&end_date=20210130'), type = "application/json") %>% 
-  data.frame
-
-data[,1:10]
+httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska&start_date=19850401&end_date=19850404'), type = "application/json") %>% 
+  bind_rows
 ```
 
 Note that simply specifying a start_date will not automatically query the duration of the time series. The below query returns zero rows. 
 
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska&start_date=19850401'), type = "application/json") %>% 
-  data.frame
+  bind_rows
 ```
 
 However, if you do not know the most recent date of the time series, you can choose an end date some time far in the future and it will query all of the data that exist without an error. 
@@ -118,7 +141,7 @@ We can quickly see that the above query yielded more than 13,000 rows of data (i
 dim(data)
 ```
 
-Putting the pieces all together, the data can be queried directly from AKFIN and saved, manipulated, or visualized directly. 
+Putting the pieces all together, the data can be queried directly from AKFIN and saved, manipulated, or visualized directly. Here we query the full time series for the Eastern Gulf of Alaska and for the Eastern Aleutian Islands
 
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska,Eastern%20Aleutians&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
@@ -129,8 +152,10 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_
   facet_wrap(~ECOSYSTEM_SUB)
 ```
 
+Or for the Eastern Gulf of Alaska for a single year.
+
 ```{r}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
+httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska&start_date=19850401&end_date=19860401'), type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
   ggplot(aes(date,MEANSST)) + 
@@ -163,7 +188,7 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 ```
 
 
-One could alternatively query and summarize data by year by simply grouping and summarizing the data in-line.
+One could alternatively query and summarize data by year. Note that year is a character so it needs to be converted to an integer for continuous plotting. Also, because the most recent year will be incomplete, the most recent annual mean will be wonky.
 
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=400,509&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
@@ -178,23 +203,9 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
   facet_wrap(~NMFSAREA)
 ```
 
-One could create a map of NMFS areas for reference from the "simplemfs" shapefile
-```{r}
-simplenmfs <- readOGR(dsn="Data",layer="simplenmfs")
-nmfs.df <- merge(fortify(simplenmfs), as.data.frame(simplenmfs), by.x="id", by.y=0)
-ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
-  geom_polygon(fill=NA,color="black") +
-  theme_bw()
 
-```
 
-And the map would probably be more useful with labels.
 
-```{r}
-nmfs_reg<-aggregate(cbind(long, lat) ~ REP_AREA, data=nmfs.df, FUN=mean)
-ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
-  geom_polygon(fill=NA,color="black") +
-  geom_label_repel(data = nmfs_reg, aes(x = long, y = lat, label = REP_AREA), size = 4, color="red", inherit.aes = FALSE)+
-  theme_bw()
- 
-```
+References
+Skirving, W; Marsh, B; De La Cour, J; Liu, G; Harris, A; Maturi, E; Geiger, E; Eakin, CM. CoralTemp and the Coral Reef Watch Coral Bleaching Heat Stress Product Suite Version 3.1. Remote Sens. 2020, 12, 3856; https://doi.org/10.3390/rs12233856.
+
