@@ -9,6 +9,15 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
 ```
 
+```{r}
+library(httr)
+library(tidyverse)
+library(lubridate)
+library(sp)
+library(rgdal)
+library(ggrepel)
+```
+
 Satellite data provide information across broad spatial and temporal extents. These data are often valuable for linkage with biological or fishery data for connection to stock assessments or other fishery evaluations. In recent years, access to these satellite data has expanded dramatically, enabling users to easily query and download a suite of environmental datasets in gridded forms through user-friendly interfaces like ERDAPP data servers (https://coastwatch.pfeg.noaa.gov/erddap/index.html). One limitation to the basic ERDDAP functionality is that users must specify spatial extents of their data downloads in rectangular polygons. Supplementary tools have been created (e.g., the R package "rerddapXtracto",https://cran.r-project.org/web/packages/rerddapXtracto/) that include workarounds to this limitation but some bottlenecks still remain. For example, many users may be interested simply in a time series of daily, weekly, or monthly average sea surface temperatures (SST) across their spatial extent of interest. To extract this information using the rerddapXtracto or the ERDDAP interfaces, a user must first download all of the individual SST temperature values across their spatial grid before they can then calculate the single average SST value of interest. Such an operation can be time-consuming because the Alaska SST grid, for example, contains more than 200,000 SST records for each day. This time consuming operation may also be inefficient if the end user simply wants to aggregate the data across large spatial areas.
 
 The Alaska Fisheries Science Center worked with the Alaska Fisheries Information Network (AKFIN) at Pacific States Marine Fisheries Commission to develop a more efficient data extraction process for spatial strata that are commonly used by Alaska scientists. Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily (https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km) for the entire spatial extent of the U.S. exclusive economic zone around Alaska. These daily data downloads (01 Apr 1985 - present) are stored on the backend of the AKFIN database server. The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, or polygons. These strata include each of the NMFS management areas (Fig. 1) and each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council (Fig. 2 WAITING FOR BRETT'S SHAPEFILE ON THIS).   
@@ -54,14 +63,6 @@ Blah blah blah regions regions regions.
 **Ecosystem_sub**
 **nmfsareas**
 
-```{r}
-library(httr)
-library(tidyverse)
-library(lubridate)
-library(sp)
-library(rgdal)
-library(ggrepel)
-```
 
 
 ```{r cars}
