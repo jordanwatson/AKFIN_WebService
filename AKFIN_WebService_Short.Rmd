@@ -200,7 +200,7 @@ updateddata <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/
   dplyr::select(date,meansst=MEANSST,NMFSAREA) #I just simplify my data frame
 ```
 
-The detect_event() and the ts2clm() functions will create analyze your dataset for a particular baseline period, which you specify. This time series begins on 1985-04-01 so we use the convention to set the baseline period as the earliest 30-year series. The detect_event() function creates a list of 2 data frames. The first, **climatology**, adds a series of columns to your data frame, including the seasonal climatology and MHW thresholds as well as flags for whether or not a record falls within an MHW. The second list object, **event**, includes summary information about each of the MHW events (e.g., max intensity, duration, start and end dates, etc.). 
+The detect_event() and the ts2clm() functions will analyze your dataset for marine heatwave status given a particular baseline period. We specify the earliest 30-years as a baseline by convention. The ts2clm() function generates marine heatwave thresholds from your baseline period. The detect_event() function creates a list of 2 data frames. The first, **climatology**, adds a series of columns to your data frame, including the seasonal climatology and MHW thresholds as well as flags for whether or not a record falls within a MHW. The second list object, **event**, includes summary information about each of the MHW events (e.g., max intensity, duration, start and end dates, etc.). 
 
 ```{r}
 mhw <- detect_event(ts2clm(updateddata %>% 
