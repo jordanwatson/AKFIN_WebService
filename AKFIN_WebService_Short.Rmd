@@ -189,7 +189,110 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 
 
 ##Extensions: 
-This would be a good place to put the marine heat index or anything else we wanted to include.
+Once you have daily time series for a spatial stratum it's really straightforward to use the heatwaveR package to characterize marine heatwaves (MHWs) in your data. The package vignette is fantastic (https://robwschlegel.github.io/heatwaveR/). We'll demonstrate a few quick examples below using our time series for NMFS area 640 (Eastern GOA). To keep this document short we only demonstrate plotting a single stratum but please contact us for additional code examples with multiple spatial strata if you are interested. We're happy to help with any indicator development. 
+
+```{r}
+library(heatwaveR)
+updateddata <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850401&end_date=20211231'), type = "application/json") %>% 
+  bind_rows %>% 
+  mutate(date=as_date(READ_DATE)) %>% 
+  data.frame %>% 
+  dplyr::select(date,meansst=MEANSST,NMFSAREA) #I just simplify my data frame
+```
+
+The detect_event() and the ts2clm() functions will create analyze your dataset for a particular baseline period, which you specify. This time series begins on 1985-04-01 so we use the convention to set the baseline period as the earliest 30-year series. The detect_event() function creates a list of 2 data frames. The first, **climatology**, adds a series of columns to your data frame, including the seasonal climatology and MHW thresholds as well as flags for whether or not a record falls within an MHW. The second list object, **event**, includes summary information about each of the MHW events (e.g., max intensity, duration, start and end dates, etc.). 
+
+```{r}
+mhw <- detect_event(ts2clm(updateddata %>% 
+                              rename(t=date,temp=meansst) %>% 
+                              arrange(t), climatologyPeriod = c("1985-04-01", "2015-03-31"))) #Specify the baseline period.
+
+str(mhw)
+```
+
+To create the common "flame" plots for MHWs, simply extract the climatology object from the list and plot it. Below we will filter the data since 2018-12-01 for NMFS area 640. The plotting code here is just the default code from the heatwaveR vignettes. You can easily see how to customize the aesthetics in normal tidy fashion.
+
+```{r}
+mhw_clim <- mhw$climatology %>% filter(t>=as.Date("2018-12-01"))
+
+ggplot(data = mhw_clim, aes(x = t)) +
+  geom_flame(aes(y = temp, y2 = thresh, fill = "all"), show.legend = T) +
+  geom_flame(data = mhw_clim, aes(y = temp, y2 = thresh, fill = "top"),  show.legend = T) +
+  geom_line(aes(y = temp, colour = "temp")) +
+  geom_line(aes(y = thresh, colour = "thresh"), size = 1.0) +
+  geom_line(aes(y = seas, colour = "seas"), size = 1.2) +
+  scale_colour_manual(name = "Line Colour",
+                      values = c("temp" = "black", 
+                                 "thresh" =  "forestgreen", 
+                                 "seas" = "grey80")) +
+  scale_fill_manual(name = "Event Colour", 
+                    values = c("all" = "salmon", 
+                               "top" = "red")) +
+  scale_x_date(date_labels = "%b %Y") +
+  guides(colour = guide_legend(override.aes = list(fill = NA))) +
+  labs(y = expression(paste("Temperature [", degree, "C]")), x = NULL) + 
+  theme(legend.position="top")
+```
+
+You can also tweak the image slightly to add the intensity categories of the MHWs. Again, the plotting code is verbatim from the heatwaveR vignettes. To illustrate the categories a bit better, here we switch data sets to the Northern Bering Sea ecosystem region. We have also consolidated some of the code to reduce the number of intermediate objects and we filter the data from 2019-01-01 to 2019-12-31.
+
+```{r}
+updateddata <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850401&end_date=20211231'), type = "application/json") %>% 
+  bind_rows %>% 
+  mutate(date=as_date(READ_DATE)) %>% 
+  data.frame %>% 
+  dplyr::select(date,meansst=MEANSST) #I just simplify my data frame
+
+clim_cat <- (detect_event(ts2clm(updateddata %>% 
+                              rename(t=date,temp=meansst) %>% 
+                              arrange(t), climatologyPeriod = c("1985-04-01", "2015-03-31"))))$climatology %>% #Specify the baseline period.
+  dplyr::mutate(diff = thresh - seas,
+                thresh_2x = thresh + diff,
+                thresh_3x = thresh_2x + diff,
+                thresh_4x = thresh_3x + diff) %>% 
+  filter(t>=as.Date("2019-01-01") & t<=as.Date("2019-12-31")) # Select the time period to display.
+
+# Set line colours
+lineColCat <- c(
+  "Temperature" = "black",
+  "Climatology" = "gray20",
+  "Threshold" = "darkgreen",
+  "2x Threshold" = "darkgreen",
+  "3x Threshold" = "darkgreen",
+  "4x Threshold" = "darkgreen"
+  )
+
+# Set category fill colours
+fillColCat <- c(
+  "Moderate" = "#ffc866",
+  "Strong" = "#ff6900",
+  "Severe" = "#9e0000",
+  "Extreme" = "#2d0000"
+  )
+
+
+ggplot(data = clim_cat, aes(x = t, y = temp)) +
+  geom_flame(aes(y2 = thresh, fill = "Moderate")) +
+  geom_flame(aes(y2 = thresh_2x, fill = "Strong")) +
+  geom_flame(aes(y2 = thresh_3x, fill = "Severe")) +
+  geom_flame(aes(y2 = thresh_4x, fill = "Extreme")) +
+  geom_line(aes(y = thresh_2x, col = "2x Threshold"), size = 0.7, linetype = "dashed") +
+  geom_line(aes(y = thresh_3x, col = "3x Threshold"), size = 0.7, linetype = "dotdash") +
+  geom_line(aes(y = thresh_4x, col = "4x Threshold"), size = 0.7, linetype = "dotted") +
+  geom_line(aes(y = seas, col = "Climatology"), size = 0.7) +
+  geom_line(aes(y = thresh, col = "Threshold"), size = 0.7) +
+  geom_line(aes(y = temp, col = "Temperature"), size = 0.6) +
+  scale_colour_manual(name = NULL, values = lineColCat,
+                      breaks = c("Temperature", "Climatology", "Threshold",
+                                 "2x Threshold", "3x Threshold", "4x Threshold")) +
+  scale_fill_manual(name = NULL, values = fillColCat, guide = FALSE) +
+  scale_x_date(date_labels = "%b %Y") +
+  guides(colour = guide_legend(override.aes = list(linetype = c("solid", "solid", "solid",
+                                                                "dashed", "dotdash", "dotted"),
+                                                   size = c(0.6, 0.7, 0.7, 0.7, 0.7, 0.7)))) +
+  labs(y = "Temperature [°C]", x = NULL) +
+  theme(legend.position="top")
+```
 
 
 References
