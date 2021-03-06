@@ -23,37 +23,47 @@ Satellite data provide information across broad spatial and temporal extents. Th
 
 
 
-Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily for the entire spatial extent of the U.S. exclusive economic zone around Alaska. The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, including each of the NMFS management areas, each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council, the BSIERP regions, and the ADF&G stat. areas (Fig. 1 WAITING FOR BRETT'S SHAPEFILE ON THIS).
+Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily for the entire spatial extent of the U.S. exclusive economic zone around Alaska. The time series begins 1/1/1985 and extends through the present (all data were sourced from Coral Reef Watch except 1/1/1985-3/31/1985, which were sourced from NOAA National Environmentl Satellite Data and Information Service). The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, including each of the NMFS management areas, each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council, the BSIERP regions, and the ADF&G stat. areas.
+```{r echo=FALSE, message=FALSE, results=FALSE, fig.cap="Map of four commonly used spatial strata for which SST data are averaged daily."}
+require(gridExtra)
+fgdb <- "Data/Alaska_Marine_Management_Areas.gdb"
+ogrListLayers(fgdb)
+area<- readOGR(dsn=fgdb,layer="Alaska_Marine_Areas_dd")
+test.df <- merge(fortify(area), as.data.frame(area), by.x="id", by.y=0)
+test.df<-test.df%>%
+  mutate(long2=ifelse(long>0,long-360, long))
+P1<-ggplot(data = filter(test.df, NMFS_REP_AREA>0), aes(x=long2, y=lat, group = group, lines=NMFS_REP_AREA)) +
+  geom_polygon(fill=NA, color="black") +
+  xlab("")+ggtitle("NMFS areas")+
+  theme_bw()+
+  theme(legend.position="none",
+         plot.title = element_text(hjust = 0.5))
+P2<-ggplot(data = filter(test.df, Ecosystem_Subarea>0), aes(x=long2, y=lat, group = group, lines=Ecosystem_Subarea)) +
+  geom_polygon(fill=NA, color="black") +
+  xlab("")+ggtitle("Ecosystem subareas")+ylab("")+
+    theme_bw()+
+  theme(legend.position="none",
+         plot.title = element_text(hjust = 0.5))
+P3<-ggplot(data = filter(test.df, STAT_AREA>0), aes(x=long2, y=lat, group = group, lines=STAT_AREA)) +
+  geom_polygon(fill=NA, color="black") +
+  xlab("long")+ggtitle("Stat. areas")+
+  theme_bw()+
+  theme(legend.position="none",
+        plot.title = element_text(hjust = 0.5))
+P4<-ggplot(data = filter(test.df, BSIERP_ID>0), aes(x=long2, y=lat, group = group, lines=as.character(BSIERP_ID))) +
+  geom_polygon(fill=NA, color="black") +
+  xlab("long")+ggtitle("BSIERP regions")+ylab("")+
+  theme_bw()+
+  theme(legend.position="none",
+        plot.title = element_text(hjust = 0.5))
+grid.arrange(grobs = list(P1, P2, P3, P4))
 
-(I plan to replace these with a four panel figure showing NMFS areas, Ecosystem regions, BISIERPs, and stat areas)
-```{r echo=FALSE, message=FALSE, results=FALSE, fig.cap="Map of the NMFS management areas for Alaska, illustrating each of the NMFS spatial strata for which SST data are averaged daily."}
-#Import NMFS areas polygon
-simplenmfs <- readOGR(dsn="Data",layer="simplenmfs")
-nmfs.df <- merge(fortify(simplenmfs), as.data.frame(simplenmfs), by.x="id", by.y=0)
 
-#Extract centroids for labeling and plot
-nmfs_reg<-aggregate(cbind(long, lat) ~ REP_AREA, data=nmfs.df, FUN=mean)
-ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
-  geom_polygon(fill=NA,color="black") +
-  geom_label_repel(data = nmfs_reg, aes(x = long, y = lat, label = REP_AREA), size = 4, color="red", inherit.aes = FALSE)+
-  theme_bw()
+
 ```
 
 
-```{r eval=FALSE, echo=FALSE, fig.cap="Map of the ecosystem regions for Alaska, illustrating each of the ecosystem spatial strata for which SST data are averaged daily."}
-# For now this is set to eval=FALSE because we don't have this shapefile from Brett yet.
-ecosystems <- readOGR(dsn="Data",layer="XXXX")
-ecosystems.df <- merge(fortify(ecosystems), as.data.frame(ecosystems), by.x="id", by.y=0)
-# ggplot(data = nmfs.df, aes(x=long, y=lat, group = group)) +
-#   geom_polygon(fill=NA,color="black") +
-#   theme_bw()
 
-ecosystems_reg<-aggregate(cbind(long, lat) ~ Ecosystem_sub, data=ecosystems.df, FUN=mean)
-ggplot(data = ecosystems.df, aes(x=long, y=lat, group = group)) +
-  geom_polygon(fill=NA,color="black") +
-  geom_label_repel(data = ecosystems_reg, aes(x = long, y = lat, label = Ecosystem_sub), size = 4, color="red", inherit.aes = FALSE)+
-  theme_bw()
-```
 
 With this tool, users can easily incorporate SST data into stock assessments and other processes, for example one could plot a time series of average summer SST for NMFS areas 640 and 650 (Fig 2)
 
