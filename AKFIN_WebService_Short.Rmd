@@ -18,13 +18,16 @@ library(rgdal)
 library(ggrepel)
 ```
 
-##Introduction:
-Satellite data provide information across broad spatial and temporal extents. These data are often valuable for linkage with biological or fishery data for connection to stock assessments or other fishery evaluations. The Alaska Fisheries Science Center worked with the Alaska Fisheries Information Network (AKFIN) at Pacific States Marine Fisheries Commission to develop an easy and efficient satellite sea surface temperature (SST) data extraction process for spatial strata that are commonly used by Alaska scientists and managers.
+
+### Introduction:
+Satellite data provide information across broad spatial and temporal extents. These data are often valuable for stock assessments or other fishery evaluations when linked with biological or fishery data. The Alaska Fisheries Science Center worked with the Alaska Fisheries Information Network (AKFIN) at Pacific States Marine Fisheries Commission to develop an easy and efficient satellite sea surface temperature (SST) data extraction process for spatial strata that are commonly used by Alaska fisheries scientists and managers.
+
+Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily for the entire spatial extent of the U.S. exclusive economic zone around Alaska. The time series begins 1/1/1985 and extends through the present (all data were sourced from Coral Reef Watch except 1/1/1985-3/31/1985, which were sourced from NOAA National Environmental Satellite Data and Information Service). For the Bering Sea and Gulf of Alaska, the query filters only data where water depth is between 10 and 200m. For the Aleutian Islands, a depth filter does not exist. The full gridded dataset is available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, including each of the NMFS management areas, each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council, the BSIERP regions, and the ADF&G statistical areas (Fig. 1). 
+
+For users that have custom spatial strata, whether different lat/lon bounds, different depth ranges, or custom shapefiles, they can contact us to discuss creating a custom URL query for them.
 
 
-
-Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily for the entire spatial extent of the U.S. exclusive economic zone around Alaska. The time series begins 1/1/1985 and extends through the present (all data were sourced from Coral Reef Watch except 1/1/1985-3/31/1985, which were sourced from NOAA National Environmentl Satellite Data and Information Service). The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, including each of the NMFS management areas, each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council, the BSIERP regions, and the ADF&G stat. areas.
-```{r echo=FALSE, message=FALSE, results=FALSE, fig.cap="Map of four commonly used spatial strata for which SST data are averaged daily."}
+```{r echo=FALSE, message=FALSE, results=FALSE, fig.cap="Fig. 1. Map of four commonly used spatial strata for which SST data are averaged daily."}
 require(gridExtra)
 fgdb <- "Data/Alaska_Marine_Management_Areas.gdb"
 ogrListLayers(fgdb)
@@ -63,11 +66,10 @@ grid.arrange(grobs = list(P1, P2, P3, P4))
 ```
 
 
+With this tool, users can easily incorporate SST data into stock assessments and other processes, for example one could plot a time series of average summer SST for NMFS areas 640 and 650 (Fig. 2)
 
 
-With this tool, users can easily incorporate SST data into stock assessments and other processes, for example one could plot a time series of average summer SST for NMFS areas 640 and 650 (Fig 2)
-
-```{r, message=FALSE, fig.cap="June-August SST 1985-2020 in EGOA NMFS areas."}
+```{r, message=FALSE, fig.cap="Fig. 2. June-August SST 1985-2020 in EGOA NMFS areas."}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
   bind_rows %>% 
   mutate(MONTH=month(as_date(READ_DATE))) %>% 
@@ -82,17 +84,20 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 
 ```
 
-## Web Service-How It Works:
+
+### Web Service-How It Works:
 AKFIN has created a set of web services or web APIs to streamline access to the average daily temperatures within each of the relevant strata. Satellite SST files are downloaded daily as two separate netCDF files - one for positive and one for negative longitudes. The daily data are then clipped by merging them with a spatial lookup table that encompasses the exclusive economic zone (EEZ) of Alaska and merged into a single daily gridded dataset that includes 212,813 temperature records for each day. 
+
+
 ```{r cars}
 #View strata included in the lookup table
 lkp <- readRDS("Data/crwsst_spatial_lookup_table.RDS") 
 str(lkp)
 ```
 
-In the first example we will query SST within a NMFS area. NMFS areas are particularly relevant to stock assessment scientists. Currently, NMFS areas can be queried individually (daily means calculated for each NMFS area). If individual users / assessment authors would prefer means calculated using the raw data for multiple areas pooled, they can contact the authors and we can arrange for custom aggregates. For the Bering Sea and Gulf of Alaska, the query filters only data where water depth is between 10 and 200m. For the Aleutian Islands, a depth filter does not exist. Analysts that are interested in obtaining data that have not been filtered can contact the authors of this report. 
 
-The web service enables us to query data using a URL, where the URL itself contains information for querying data from the server. One could paste the URL below into a browser and view the output there if desired. We query the URL "https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640", where "nmfs_area_crw_avg_sst?" is the name of the dataset we are querying. This is the daily CRW SST dataset, which has been averaged by the field **nmfs_area**. A "?" separates the dataset name from the query criteria. The default behavior is to pull a single record, the most recent in the data set. The web service encodes the data as "json" so R must be told how to decode the data using the type = "application/json" argument. 
+ The web service enables us to query data using a URL, where the URL itself contains information for querying data from the server. One could paste the URL below into a browser and view the output there if desired. In the first example we will query SST within a NMFS area. Currently, NMFS areas can be queried individually (daily means calculated for each NMFS area). We query the URL "https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640", where "nmfs_area_crw_avg_sst?" is the name of the dataset we are querying. This is the daily CRW SST dataset, which has been averaged by the field **nmfs_area**. A "?" separates the dataset name from the query criteria. The default behavior is to pull a single record, the most recent in the data set. The web service encodes the data as "json" so R must be told how to decode the data using the type = "application/json" argument. 
+
 
 ```{r}
 httr::content(httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640"), type = "application/json")%>% 
@@ -101,11 +106,11 @@ httr::content(httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 ```
  
 
-##Time Periods:
+### Time Periods:
 It is unlikely that you want a single temperature record. To instead query a time period, the user can specify a new time parameter to the URL with an "&" delimiter. Users can query a time period using "start_date" and "end_date", "read_date", or "dates_back" parameters. Note that date is sufficient, it is not necessary to specify a time component in the query. 
 
-
 Most users will want to query the entire duration of the time series, which for the CRW SST dataset begins on 1985-04-01. To query the entire time series, specify "start_date" & "end_date". "end_date" must be included, but if you do not know the most recent date of the time series, you can choose an end date some time far in the future and it will query all of the data that exist without an error. 
+
 
 ```{r}
 data <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
@@ -114,13 +119,19 @@ data <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nm
 head(data)
 ```
 
+
 The full time series yields more than 13,000 rows of data per area (i.e., daily data from 1985-04-01 to present).
+
+
 ```{r}
 dim(data)
 ```
 
-Any time range can be chosen with "start_date" and "end_date", for example if one wanted to pull SST in NMFS area 640 in 1987
-```{r}
+
+Any time range can be chosen with "start_date" and "end_date", for example if one wanted to pull SST in NMFS area 640 in 1987 (Fig. 3).
+
+
+```{r, fig.cap="Fig. 3. 1987 SST in NMFS 640."}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19870101&end_date=19880101'), type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
@@ -129,28 +140,38 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
   theme_bw()
 ```
 
+
 You can query a specific date with "read_date". For example SST in MFS 640 on Y2K.
+
+
 ```{r}
 #Query the day after your date of interest because omitting the time component in read_date misses that day's reading.
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000102'), type = "application/json") %>% 
   bind_rows 
 ```
 
+
 You can specify a number of days prior to any date using a "days_back" parameter specification. For example the three days before Y2K.
+
+
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101&days_back=2'), type = "application/json") %>% 
   bind_rows 
 ```
 
+
 If "read_date" is not specified, "days_back" returns the most recent SSTs. Here are SSTs for the last three days in NMFS 640.
+
+
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&days_back=2'), type = "application/json") %>% 
   bind_rows 
 ```
 
 
-##Spatial Extents:
+### Spatial Extents:
 To query multiple areas, separate the values by a comma. For example to query NMFS areas 640 and 650 (Southeast Alaska outside waters):
+
 
 ```{r}
 httr::content(httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650"), type = "application/json")%>% 
@@ -160,18 +181,25 @@ httr::content(httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 
 The **Ecosystem_sub** field in our lookup table contains all of the different ecosystem regions that can be queried from the data. Points outside these ecosystem regions are listed as NA for this field.
 
+
 ```{r}
 unique(lkp$Ecosystem_sub)
 ```
 
+
 To query the data for the "Southeastern Bering Sea", for example, add "ecosystem_sub=Southeastern%20Bering%20Sea", where spaces are filled by "%20".
+
+
 ```{r}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json") %>% 
   bind_rows
 ```
 
-Putting the pieces all together, the data can be queried directly from AKFIN and saved, manipulated, or visualized directly. Here we query the full time series for the Eastern Gulf of Alaska and for the Eastern Aleutian Islands
-```{r}
+
+Putting the pieces all together, the data can be queried directly from AKFIN and saved, manipulated, or visualized directly. Here we query the full time series for the Eastern Gulf of Alaska and for the Eastern Aleutian Islands (Fig. 4.).
+
+
+```{r, fig.cap="Fig. 4. SST for the full time series in two ecosystem subregions."}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska,Eastern%20Aleutians&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
@@ -180,9 +208,11 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_
   facet_wrap(~ECOSYSTEM_SUB)
 ```
 
-One could query and summarize data by month (week, year, etc) by simply grouping and summarizing the data in-line. Because the most recent year will be incomplete, its annual mean will be wonky.
 
-```{r, message=FALSE}
+One could query and summarize data by month (week, year, etc) by simply grouping and summarizing the data in-line. Because the most recent year will be incomplete, its annual mean will be wonky (Fig. 5.).
+
+
+```{r, message=FALSE, fig.cap="Fig. 5. Mean annual SST in EGOA NMFS areas."}
 #Note that year is a character so it needs to be converted to an integer for continuous plotting.
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
   bind_rows %>% 
@@ -198,8 +228,9 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 ```
 
 
-##Extensions: 
+### Extensions: 
 Once you have daily time series for a spatial stratum it's really straightforward to use the heatwaveR package to characterize marine heatwaves (MHWs) in your data. The package vignette is fantastic (https://robwschlegel.github.io/heatwaveR/). We'll demonstrate a few quick examples below using our time series for NMFS area 640 (Eastern GOA). To keep this document short we only demonstrate plotting a single stratum but please contact us for additional code examples with multiple spatial strata if you are interested. We're happy to help with any indicator development. 
+
 
 ```{r}
 library(heatwaveR)
@@ -210,7 +241,9 @@ updateddata <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/
   dplyr::select(date,meansst=MEANSST,NMFSAREA) #I just simplify my data frame
 ```
 
+
 The detect_event() and the ts2clm() functions will analyze your dataset for marine heatwave status given a particular baseline period. We specify the earliest 30-years as a baseline by convention. The ts2clm() function generates marine heatwave thresholds from your baseline period. The detect_event() function creates a list of 2 data frames. The first, **climatology**, adds a series of columns to your data frame, including the seasonal climatology and MHW thresholds as well as flags for whether or not a record falls within a MHW. The second list object, **event**, includes summary information about each of the MHW events (e.g., max intensity, duration, start and end dates, etc.). 
+
 
 ```{r}
 mhw <- detect_event(ts2clm(updateddata %>% 
@@ -220,9 +253,11 @@ mhw <- detect_event(ts2clm(updateddata %>%
 str(mhw)
 ```
 
-To create the common "flame" plots for MHWs, simply extract the climatology object from the list and plot it. Below we will filter the data since 2018-12-01 for NMFS area 640. The plotting code here is just the default code from the heatwaveR vignettes. You can easily see how to customize the aesthetics in normal tidy fashion.
 
-```{r}
+To create the common "flame" plots for MHWs, simply extract the climatology object from the list and plot it. Below we will filter the data since 2018-12-01 for NMFS area 640. The plotting code here is just the default code from the heatwaveR vignettes. You can easily see how to customize the aesthetics in normal tidy fashion (Fig. 6.).
+
+
+```{r, fig.cap="Fig. 6. Marine heatwave index flame plot for NMFS 640 Dec. 2018-present."}
 mhw_clim <- mhw$climatology %>% filter(t>=as.Date("2018-12-01"))
 
 ggplot(data = mhw_clim, aes(x = t)) +
@@ -244,9 +279,11 @@ ggplot(data = mhw_clim, aes(x = t)) +
   theme(legend.position="top")
 ```
 
-You can also tweak the image slightly to add the intensity categories of the MHWs. Again, the plotting code is verbatim from the heatwaveR vignettes. To illustrate the categories a bit better, here we switch data sets to the Northern Bering Sea ecosystem region. We have also consolidated some of the code to reduce the number of intermediate objects and we filter the data from 2019-01-01 to 2019-12-31.
 
-```{r}
+You can also tweak the image slightly to add the intensity categories of the MHWs. Again, the plotting code is verbatim from the heatwaveR vignettes. To illustrate the categories a bit better, here we switch data sets to the Northern Bering Sea ecosystem region. We have also consolidated some of the code to reduce the number of intermediate objects and we filter the data from 2019-01-01 to 2019-12-31 (Fig. 7).
+
+
+```{r, fig.cap="Fig. 7. 2019 MHW intesity for the Northern Bering Sea."}
 updateddata <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850401&end_date=20211231'), type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
