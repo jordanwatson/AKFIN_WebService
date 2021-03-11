@@ -9,21 +9,23 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
 ```
 
+
+##Introduction:   
+Satellite data provide information across broad spatial and temporal extents. These data are often valuable for linkage with biological or fishery data for connection to stock assessments or other fishery evaluations. The Alaska Fisheries Science Center worked with the Alaska Fisheries Information Network (AKFIN) at Pacific States Marine Fisheries Commission to develop an easy and efficient satellite sea surface temperature (SST) data extraction process for spatial strata that are commonly used by Alaska scientists and managers.    
+
+Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily for the entire spatial extent of the U.S. exclusive economic zone around Alaska. The time series begins 1985-01-01 and extends through the present (all data were sourced from Coral Reef Watch except 1985-01-01 : 1985-03-315, which were sourced from NOAA National Environmental Satellite Data and Information Service [NESDIS]). The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, including each of the NMFS management areas, each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council, the BSIERP regions, and the ADF&G statistical areas.
+
+The greatest convenience of this tool ist that no files need to be locally stored, nor do time series need to be updated and appended to existing data files. 
+
 ```{r}
-library(httr)
-library(tidyverse)
-library(lubridate)
-library(sp)
-library(rgdal)
-library(ggrepel)
+library(httr) # For pulling data via a URL
+library(tidyverse) # Data manipulation
+library(lubridate) # Date formatting
+library(sp) # For maps
+library(rgdal) # For maps
+library(ggrepel) #For maps
 ```
 
-##Introduction:
-Satellite data provide information across broad spatial and temporal extents. These data are often valuable for linkage with biological or fishery data for connection to stock assessments or other fishery evaluations. The Alaska Fisheries Science Center worked with the Alaska Fisheries Information Network (AKFIN) at Pacific States Marine Fisheries Commission to develop an easy and efficient satellite sea surface temperature (SST) data extraction process for spatial strata that are commonly used by Alaska scientists and managers.
-
-
-
-Satellite SST data from the NOAA Coral Reef Watch Program (Skirving 2020; https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) are downloaded daily for the entire spatial extent of the U.S. exclusive economic zone around Alaska. The time series begins 1/1/1985 and extends through the present (all data were sourced from Coral Reef Watch except 1/1/1985-3/31/1985, which were sourced from NOAA National Environmentl Satellite Data and Information Service). The raw data (i.e., the full gridded dataset) are available to users with an AKFIN database account and can be easily queried from Oracle, R, or Python. Alternatively, anyone can access data that are already averaged across one of several dozen commonly used spatial strata, including each of the NMFS management areas, each of the ecosystem regions used for annual presentations to the North Pacific Fishery Management Council, the BSIERP regions, and the ADF&G stat. areas.
 ```{r echo=FALSE, message=FALSE, results=FALSE, fig.cap="Map of four commonly used spatial strata for which SST data are averaged daily."}
 require(gridExtra)
 fgdb <- "Data/Alaska_Marine_Management_Areas.gdb"
@@ -62,18 +64,21 @@ grid.arrange(grobs = list(P1, P2, P3, P4))
 
 ```
 
+```{r}
+head(httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
+  bind_rows)
+```
 
 
-
-With this tool, users can easily incorporate SST data into stock assessments and other processes, for example one could plot a time series of average summer SST for NMFS areas 640 and 650 (Fig 2)
+With this tool, users can easily incorporate SST data into stock assessments and other processes. For example, one could plot a time series of average summer SST for NMFS areas 640 and 650 (Fig 2).
 
 ```{r, message=FALSE, fig.cap="June-August SST 1985-2020 in EGOA NMFS areas."}
 httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850401&end_date=20220101'), type = "application/json") %>% 
   bind_rows %>% 
-  mutate(MONTH=month(as_date(READ_DATE))) %>% 
-  filter(MONTH==6 | MONTH==7 | MONTH==8) %>%
+  mutate(MONTH=month(as_date(READ_DATE))) %>% # Extract month from the date
+  filter(MONTH==6 | MONTH==7 | MONTH==8) %>% # Filter summer months
   group_by(YEAR,NMFSAREA)%>%
-    summarize(SST=mean(MEANSST))%>%
+    summarize(SST=mean(MEANSST))%>% # Average the data by year and area.
   ggplot(aes(as.numeric(YEAR),SST)) + 
   geom_line() + 
   facet_wrap(~NMFSAREA, nrow=2) +
