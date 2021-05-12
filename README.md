@@ -1,5 +1,5 @@
 # AKFIN WebService 
-## (Jordan.Watson@noaa.gov & Matt.Callahan@noaa.gov)
+## Jordan.Watson@noaa.gov & Matt.Callahan@noaa.gov
 
 * Do you have a data query that you do often for the Alaska Region? 
 
