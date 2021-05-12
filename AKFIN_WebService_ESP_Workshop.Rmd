@@ -2,7 +2,8 @@
 title: "Easy Access to SST Time Series for Alaska's Management Areas"
 author: "Jordan Watson (jordan.watson@noaa.gov), Matt Callahan (MCallahan@psmfc.org)"
 date: "2/22/2021"
-output: bookdown::html_document2
+#output: bookdown::html_document2
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -237,7 +238,7 @@ The detect_event() and the ts2clm() functions from **heatwaveR** will calculate 
 library(heatwaveR)
 mhw <- detect_event(ts2clm(updateddata %>% 
                               rename(t=date,temp=meansst) %>% 
-                              arrange(t), climatologyPeriod = c("1985-04-01", "2015-03-31"))) #Specify the baseline period.
+                              arrange(t), climatologyPeriod = c("1985-01-01", "2014-12-31"))) #Specify the baseline period.
 
 str(mhw)
 ```
@@ -276,7 +277,7 @@ clim_cat <- (detect_event(ts2clm(
                                    mutate(date=as_date(READ_DATE)) %>% 
                                    data.frame %>% 
                                    dplyr::select(t=date,temp=MEANSST) %>% 
-                                   arrange(t), climatologyPeriod = c("1985-04-01", "2015-03-31"))))$climatology %>% #Specify the baseline period.
+                                   arrange(t), climatologyPeriod = c("1985-01-01", "2014-12-31"))))$climatology %>% #Specify the baseline period.
   dplyr::mutate(diff = thresh - seas,
                 thresh_2x = thresh + diff,
                 thresh_3x = thresh_2x + diff,
