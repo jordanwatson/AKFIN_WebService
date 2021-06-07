@@ -84,7 +84,7 @@ data %>%
 ```
 Figure CC. Screenshot of a CRW SST query for records that fall within a crab management area. 
 
-```{r}
+```{r Query_CRW_Crab_plot}
 dbFetch(dbSendQuery(con,
                     paste0("select read_date,
                                    round(avg(temp),2) as sst,
