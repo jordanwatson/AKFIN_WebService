@@ -1,0 +1,105 @@
+---
+title: "Oracle_test"
+author: "Jordan Watson"
+date: "5/30/2021"
+output: html_document
+---
+
+```{r,include=F}
+knitr::opts_chunk$set(warning=F,message=F)
+```
+
+```{r,include=F}
+library(tidyverse)
+library(DBI) #  For database query
+library(odbc)
+library(kableExtra)
+
+#  Load the AKFIN database user name and password from an external file.
+params <- read_csv("markdown_odbc_params.csv")
+
+#  Connect to the AKFIN database
+# con <- dbConnect(odbc::odbc(), "akfin", UID=rstudioapi::askForPassword("Enter AKFIN Username"), PWD= rstudioapi::askForPassword("Enter AFSC Password"))
+con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
+```
+
+**Oracle database queries**
+
+Some data users prefer the flexibility and transparency of querying raw gridded data directly from the Oracle server. This is particularly useful for larger queries (e..g, millions of records) or for exploring data across a suite of different spatial extents (e.g., custom depth ranges, shapefiles, etc.). As we note in the web services section, such custom queries can also be automated by working with AFSC and AKFIN staff. However, for users that prefer to code their own queries, we provide several examples here. Notably, to query directly from the database, users will need an AKFIN database account, which can be provided by contacting the authors of this document.  
+
+This section is not meant to serve as a SQL tutorial. Rather, its purpose is to orient users to the structure of the database related to the SST data and lookup tables. We assume that users interested in querying the database directly via Oracle (e.g., SQL Developer) or through odbc connections from R or Python are already acquainted with the coding and configuration settings. However, interested users can contact the authors for assistance establishing such connections or custom SQL queries.  
+
+The gridded SST data (Fig. BB) are stored within the AFSC schema on the AKFIN Oracle database and the primary key linking the lookup tables (Fig. AA) with the gridded data is the ID field. In the lookup table, it is simply “ID” and in the data table it is “CRW_ID”. 
+
+
+```{sql, connection=con,output.var="data"}
+      select * from  afsc.erddap_crw_sst_spatial_lookup 
+      where rownum<=5
+```
+
+```{r,echo=F}
+data %>% 
+  kbl(digits=2,
+      format.args = list(big.mark = ',')) %>%
+  kable_styling(fixed_thead = TRUE,
+                font_size = 10)
+```
+Figure BB. Screenshot of the AFSC.ERDDAP_CRW_SST table.
+
+```{sql, connection=con,output.var="data"}
+      select * from  afsc.erddap_crw_sst 
+      where rownum<=5
+```
+
+```{r,echo=F}
+data %>% 
+  kbl(digits=2,
+      format.args = list(big.mark = ',')) %>%
+  kable_styling(fixed_thead = TRUE,
+                font_size = 10)
+```
+Figure AA. Screenshot of a CRW SST query within SQL Developer. Several columns reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns.    
+
+The following query demonstrates the primary key relationship between the data and lookup tables. In this case, we query SST (“TEMP”) data that fall within a crab management area and we add a field for “Year” (Fig. CC).
+
+```{sql, connection=con,output.var="data"}
+select read_date,
+       temp,
+       to_char(read_date,'YYYY') as Year,
+       crab
+from   afsc.erddap_crw_sst a
+       INNER JOIN (select * from afsc.erddap_crw_sst_spatial_lookup
+                   where crab <> 'NA') b
+         ON a.crw_id =b.id
+where rownum<=5
+```
+
+
+```{r,echo=F}
+data %>%
+  kbl(digits=2,
+      format.args = list(big.mark = ',')) %>%
+  kable_styling(fixed_thead = TRUE,
+                font_size = 10)
+```
+Figure CC. Screenshot of a CRW SST query for records that fall within a crab management area. 
+
+```{r}
+dbFetch(dbSendQuery(con,
+                    paste0("select read_date,
+                                   round(avg(temp),2) as sst,
+                                   crab
+                            from afsc.erddap_crw_sst a
+                            INNER JOIN (select * 
+                                      from afsc.erddap_crw_sst_spatial_lookup
+                                      where crab = 'bb') b
+                            ON a.crw_id = b.id 
+                            group by 
+                               crab,
+                               read_date"))) %>% 
+  ggplot(aes(READ_DATE,SST)) + 
+  geom_line() + 
+  geom_smooth()
+```
+
+Figure DD. Screenshot of a plotted query of Bristol Bay crab management area SST data averaged daily and plotted with default smoothing.
