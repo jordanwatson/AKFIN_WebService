@@ -257,7 +257,7 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_
 
 # Piping web service queries into marine heatwave calculations
 
-With the daily time series for a spatial stratum, implementation of the heatwaveR package is straightforward. We encourage readers to explore the functionality described in the heatwaveR vignettes, from which the following examples are generated [@Schlegel2019]. We demonstrate a few simple examples below using web services to query the SST time series for NMFS area 640 (Eastern GOA). 
+With the daily time series for a spatial stratum, implementation of the heatwaveR package is straightforward. We encourage readers to explore the functionality described in the heatwaveR vignettes, from which the following examples are generated [@W.Schlegel2018]. We demonstrate a few simple examples below using web services to query the SST time series for NMFS area 640 (Eastern GOA). 
 
 For illustration purposes, we save SST data as an object in the first code chunk but alternatively, the data query could be piped directly into the MHW code chunk that follows to avoid creating an intermediate object.    
 
