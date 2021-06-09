@@ -134,7 +134,7 @@ head(httr::content(
 
 With this tool, users can easily incorporate SST data into stock assessments and other processes. For example, one could plot a time series of average summer SST for NMFS areas 640 and 650.   
 
-```{r, message=FALSE, fig.cap="June-August SST 1985-2020 in EGOA NMFS areas."}
+```{r, message=FALSE}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), 
   type = "application/json") %>% 
@@ -164,6 +164,7 @@ httr::content(
 ```
 
 
+
 # Time Series
 To query a date range, specify "start_date" and "end_date", "read_date", or "dates_back" parameters. Separate parameters with an "&". Most users will want the entire time series, which starts on 1985-01-01. To query the entire time series, specify "start_date" & "end_date". "end_date" must be included, but if you do not know the most recent date of the time series, you can choose an end date some time in the future and it will query all of the data that exist.  
 
@@ -188,7 +189,7 @@ dim(data)
 Any time range can be chosen with "start_date" and "end_date". For example, SST in NMFS area 640 in 1987.  
 
 
-```{r, message=FALSE, fig.cap="SST for 1987 in NMFS area 640."}
+```{r, message=FALSE}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19870101&end_date=19880101'), 
   type = "application/json") %>% 
@@ -321,7 +322,8 @@ To create the common "flame" plots for MHWs, extract the climatology object from
 
 ```{r}
 # Plotting code directly from heatwaveR vignette.
-mhw_clim <- mhw$climatology %>% filter(t>=as.Date("2018-12-01"))  #Extract the MHW data
+mhw_clim <- mhw$climatology %>% 
+  filter(t>=as.Date("2018-12-01"))  #Extract the MHW data
 
 ggplot(data = mhw_clim, aes(x = t)) +
   geom_flame(aes(y = temp, y2 = thresh, fill = "all"),
