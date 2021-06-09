@@ -139,10 +139,10 @@ httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), 
   type = "application/json") %>% 
   bind_rows %>% 
-  mutate(MONTH=month(as_date(READ_DATE))) %>% # Extract month from the date
+  mutate(MONTH=month(as_date(READ_DATE))) %>% # Extract month 
   filter(MONTH==6 | MONTH==7 | MONTH==8) %>% # Filter summer months
   group_by(YEAR,NMFSAREA)%>%
-  summarize(SST=mean(MEANSST))%>% # Average the data by year and area.
+  summarize(SST=mean(MEANSST))%>% # Average by year and area.
   ggplot(aes(as.numeric(YEAR),SST)) + 
   geom_line() + 
   facet_wrap(~NMFSAREA, nrow=2) +
@@ -160,7 +160,7 @@ The web service enables a query using a URL, where the URL the query parameters.
 httr::content(
   httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640"), 
   type = "application/json")%>% 
-  bind_rows #By default the URL returns a list. "bind_rows" convert to data frame/tibble
+  bind_rows #GET returns a list. "bind_rows" converts to data frame/tibble
 ```
 
 
@@ -304,17 +304,21 @@ updateddata <- httr::content(
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
   data.frame %>% 
-  dplyr::select(date,meansst=MEANSST,NMFSAREA) #simplify the data frame for clarity.
+  dplyr::select(date,
+                meansst=MEANSST,
+                NMFSAREA) #simplify data frame for clarity.
 ```
 
 The detect_event() and the ts2clm() functions from **heatwaveR** will calculate MHW status status relative to your baseline period. We specify the earliest 30-years as a baseline by convention. The ts2clm() function generates marine heatwave thresholds from your baseline period. The detect_event() function creates a list of 2 data frames. The first, **climatology**, adds a series of columns to your data frame, including the seasonal climatology and MHW thresholds as well as flags for whether or not a record falls within a MHW. The second list object, **event**, includes summary information about each of the MHW events (e.g., max intensity, duration, start and end dates, etc.).  
 
 ```{r}
 library(heatwaveR)
-mhw <- detect_event(ts2clm(updateddata %>% 
-                             rename(t=date,temp=meansst) %>% 
-                             arrange(t),
-                           climatologyPeriod = c("1985-01-01", "2014-12-31"))) #Specify baseline period
+mhw <- detect_event(
+  ts2clm(updateddata %>% 
+           rename(t=date,
+                  temp=meansst) %>% 
+           arrange(t),
+         climatologyPeriod = c("1985-01-01", "2014-12-31"))) #Specify baseline period
 
 ```
 
@@ -325,16 +329,16 @@ To create the common "flame" plots for MHWs, extract the climatology object from
 mhw_clim <- mhw$climatology %>% 
   filter(t>=as.Date("2018-12-01"))  #Extract the MHW data
 
-ggplot(data = mhw_clim, aes(x = t)) +
+ggplot(data = mhw_clim, 
+       aes(x = t)) +
   geom_flame(aes(y = temp, y2 = thresh, fill = "all"),
              show.legend = T) +
-  geom_flame(data = mhw_clim, aes(y = temp, y2 = thresh, fill = "top"),  
+  geom_flame(data = mhw_clim, 
+             aes(y = temp,y2 = thresh, fill = "top"),  
              show.legend = T) +
   geom_line(aes(y = temp, colour = "temp")) +
-  geom_line(aes(y = thresh, colour = "thresh"), 
-            size = 1.0) +
-  geom_line(aes(y = seas, colour = "seas"), 
-            size = 1.2) +
+  geom_line(aes(y = thresh, colour = "thresh"), size = 1.0) +
+  geom_line(aes(y = seas, colour = "seas"), size = 1.2) +
   scale_colour_manual(name = "Line Colour",
                       values = c("temp" = "black", 
                                  "thresh" =  "forestgreen", 
@@ -343,7 +347,8 @@ ggplot(data = mhw_clim, aes(x = t)) +
                     values = c("all" = "salmon", 
                                "top" = "red")) +
   scale_x_date(date_labels = "%b %Y") +
-  guides(colour = guide_legend(override.aes = list(fill = NA))) +
+  guides(colour = guide_legend(
+    override.aes = list(fill = NA))) +
   labs(y = expression(paste("Temperature [", degree, "C]")), x = NULL) + 
   theme(legend.position="top")
 ```
@@ -353,7 +358,8 @@ Tweak the image slightly to add the intensity categories of the MHWs. To illustr
 ```{r}
 #  Here we'll use an example where we do not save the SST data as a separate object first, simply embedding it into the ts2clm() function.
 
-clim_cat <- (detect_event(ts2clm(
+clim_cat <- (detect_event(
+  ts2clm(
   httr::content(
     httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850101&end_date=20211231'),
     type = "application/json") %>% 
@@ -388,35 +394,41 @@ fillColCat <- c(
   "Extreme" = "#2d0000"
 )
 
-ggplot(data = clim_cat, aes(x = t, y = temp)) +
+ggplot(data = clim_cat, 
+       aes(x = t, y = temp)) +
   geom_flame(aes(y2 = thresh, fill = "Moderate")) +
   geom_flame(aes(y2 = thresh_2x, fill = "Strong")) +
   geom_flame(aes(y2 = thresh_3x, fill = "Severe")) +
   geom_flame(aes(y2 = thresh_4x, fill = "Extreme")) +
-  geom_line(aes(y = thresh_2x, col = "2x Threshold"), 
-            size = 0.7, 
-            linetype = "dashed") +
+  geom_line(aes(y = thresh_2x, col = "2x Threshold"),
+            size = 0.7, linetype = "dashed") +
   geom_line(aes(y = thresh_3x, col = "3x Threshold"), 
-            size = 0.7, 
-            linetype = "dotdash") +
+            size = 0.7, linetype = "dotdash") +
   geom_line(aes(y = thresh_4x, col = "4x Threshold"), 
-            size = 0.7, 
-            linetype = "dotted") +
-  geom_line(aes(y = seas, col = "Climatology"), 
-            size = 0.7) +
-  geom_line(aes(y = thresh, col = "Threshold"), 
-            size = 0.7) +
-  geom_line(aes(y = temp, col = "Temperature"), 
-            size = 0.6) +
+            size = 0.7, linetype = "dotted") +
+  geom_line(aes(y = seas,col = "Climatology"), size = 0.7) +
+  geom_line(aes(y = thresh,col = "Threshold"), size = 0.7) +
+  geom_line(aes(y = temp,col = "Temperature"), size = 0.6) +
   scale_colour_manual(name = NULL, 
                       values = lineColCat,
-                      breaks = c("Temperature", "Climatology", "Threshold",
-                                 "2x Threshold", "3x Threshold", "4x Threshold")) +
-  scale_fill_manual(name = NULL, values = fillColCat, guide = FALSE) +
+                      breaks = c("Temperature", 
+                                 "Climatology",
+                                 "Threshold",
+                                 "2x Threshold", 
+                                 "3x Threshold",
+                                 "4x Threshold")) +
+  scale_fill_manual(name = NULL, 
+                    values = fillColCat, 
+                    guide = FALSE) +
   scale_x_date(date_labels = "%b %Y") +
-  guides(colour = guide_legend(override.aes = list(linetype = c("solid", "solid", "solid",
-                                                                "dashed", "dotdash", "dotted"),
-                                                   size = c(0.6, 0.7, 0.7, 0.7, 0.7, 0.7)))) +
+  guides(colour = guide_legend(
+    override.aes = list(linetype = c("solid", 
+                                     "solid", 
+                                     "solid",
+                                     "dashed", 
+                                     "dotdash", 
+                                     "dotted"),
+                        size = c(0.6, 0.7, 0.7,0.7, 0.7, 0.7)))) +
   labs(y = "Temperature [°C]", x = NULL) +
   theme(legend.position="top")
 ```
@@ -435,31 +447,14 @@ select * from  afsc.erddap_crw_sst_spatial_lookup
 where rownum<=5
 ```
 
-```{r,echo=F,eval=F}
-# data %>% 
-#   kbl(digits=2,
-#       format.args = list(big.mark = ',')) %>%
-#   kable_styling(fixed_thead = TRUE,
-#                 font_size = 10)
-data
-```
 
 ```{sql, connection=con}
 select * from  afsc.erddap_crw_sst 
 where rownum<=5
 ```
 
-CRW SST query within SQL Developer. Several columns reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns.
-
-```{r,echo=F,eval=F}
-# data %>% 
-#   kbl(digits=2,
-#       format.args = list(big.mark = ',')) %>%
-#   kable_styling(fixed_thead = TRUE,
-#                 font_size = 10)
-#data
-```
-    
+CRW SST query within SQL. Several columns reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns.
+  
 
 The following query demonstrates the primary key relationship between the data and lookup tables. In this case, we query SST (“TEMP”) data that fall within a crab management area and we add a field for “Year” (Fig. CC).
 
@@ -476,16 +471,6 @@ where rownum<=5
 ```
 
 CRW SST query for records that fall within a crab management area. 
-
-```{r,echo=F,eval=F}
-# data %>%
-#   kbl(digits=2,
-#       format.args = list(big.mark = ',')) %>%
-#   kable_styling(fixed_thead = TRUE,
-#                 font_size = 10)
-#data
-```
-
 
 ```{r Query_CRW_Crab_plot}
 dbFetch(dbSendQuery(con,
