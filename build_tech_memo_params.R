@@ -1,8 +1,8 @@
 library(NMFSReports)
 
-sections = c("frontmatter", "abstract", "introduction", "methods & results",
+sections = c("frontmatter", "abstract", "introduction", "methods_results",
              "discussion", "endmatter")
-authors = "Matt & Jordan"
+authors = "Jordan & Matt"
 title = "Automated and Operational access to environmental data for Alaska’s management areas"
 styles_reference_pptx = "refppt_nmfs"
 styles_reference_docx = "refdoc_noaa_tech_memo"

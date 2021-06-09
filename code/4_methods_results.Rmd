@@ -33,7 +33,7 @@ con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
 ```
 
 Methods & Results
- Satellite data
+Satellite data
 For this study, two daily satellite sea surface temperature (SST) products were used. In both cases, data were accessed via NOAA ERDDAP servers [@Simons2020] and downloaded as netcdf files within the Oracle database backend at the Alaska Fisheries Information Network (AKFIN), maintained by the Pacific States Marine Fisheries Commission. The SST data are publicly available but by ingesting them into the AKFIN backend, they can be seamlessly merged, behind the NOAA firewall, with confidential fishery-dependent data sets like observer data, vessel monitoring system (VMS) data, and fish tickets.
 Both of the SST products provide gap-free data each day. The MUR SST data set is provided by JPL NASA (JPL MUR MEaSUREs Project. 2015) and is available from June 2002 - present and are accessed via the NOAA CoastWatch West Coast Node ERDDAP server (coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41.html). These data are provided across a 0.01° x 0.01° (1 km) spatial grid. Meanwhile, the CRW SST data set covers a 0.05° x 0.05° (5 km) spatial grid and these data are obtained from the NOAA Coral Reef Watch Program (https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php) through the NOAA PacIOOS Program ERDDAP server (pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.html) from April 1985 – present. Additional data (January – March 1985) were downloaded via public ftp link from NESDIS (ftp://ftp.star.nesdis.noaa.gov/pub/socd/mecb/crw/data/coraltemp/v1.0/nc/1985/). Both the MUR and CRW data sets typically have a 1-2 day latency period. 
 Both the MUR and the CRW data sets have native formats with longitudes ranging from -180 to +180. Because the spatial extent for Alaska waters includes the International Date Line, the daily data are downloaded via two separate operations each day. One operation downloads the negative longitude data from 46°N to 68.8°N and -180°E to -130°E and the second operation downloads the positive longitude data from 47.5°N to 60.0°N and 164°E to 180°E. These downloads are merged and then clipped to spatial regions of interest within the exclusive economic zone surrounding Alaska, yielding 212,813 SST records per day.
@@ -52,11 +52,16 @@ ymin <- 50
 ymax <- 68
 
 #  Load the non-Crab areas
-area<- readOGR(dsn="Data/Alaska_Marine_Management_Areas.gdb",layer="Alaska_Marine_Areas_dd",verbose=FALSE)
+area<- readOGR(dsn="Data/Alaska_Marine_Management_Areas.gdb",
+               layer="Alaska_Marine_Areas_dd",
+               verbose=FALSE)
 test.df <- merge(fortify(area), as.data.frame(area), by.x="id", by.y=0) %>%
   mutate(long2=ifelse(long>0,long-360, long),
          BSIERP_ID=ifelse(BSIERP_ID==0,NA,BSIERP_ID)) %>% 
-  rename(`NMFS Area`=NMFS_REP_AREA,`ESR Region`=Ecosystem_Subarea,`ADFG Stat Area`=STAT_AREA,`BSIERP Region`=BSIERP_ID)
+  rename(`NMFS Area`=NMFS_REP_AREA,
+         `ESR Region`=Ecosystem_Subarea,
+         `ADFG Stat Area`=STAT_AREA,
+         `BSIERP Region`=BSIERP_ID)
 
 #  Load and merge the two different crab shapefiles.
 # crab <- readOGR(dsn="../../Other_People/Erin_Fedewa/Data",layer="BristolBay") %>% 
@@ -82,20 +87,26 @@ newdata <- test.df %>%
               filter(!is.na(`ADFG Stat Area`)) %>% 
               mutate(stratum="ADFG Stat Areas")) %>% 
   bind_rows(readOGR(dsn="Data",layer="BristolBay",verbose=FALSE) %>%  # Read in and mergee the crab shapefiles
-  fortify() %>% 
-  mutate(long2=ifelse(long<0,long+360, long),
-         group="bb") %>% # To avoid duplicating group factors from the other shapefiles, create a distinct grouping level for crab. bb is Bristol Bay
-    bind_rows(readOGR(dsn="Data",layer="St_Matthew_District",verbose=FALSE) %>%
-                fortify() %>% 
-                mutate(long2=ifelse(long<0,long+360,long),
-                       group="stm")) %>% # Similar to Bristol Bay, create St. Matthews grouping factor
-    mutate(stratum="Crab Mgmt Areas"))
-  
+              fortify() %>% 
+              mutate(long2=ifelse(long<0,long+360, long),
+                     group="bb") %>% # To avoid duplicating group factors from the other shapefiles, create a distinct grouping level for crab. bb is Bristol Bay
+              bind_rows(readOGR(dsn="Data",
+                                layer="St_Matthew_District",
+                                verbose=FALSE) %>%
+                          fortify() %>% 
+                          mutate(long2=ifelse(long<0,long+360,long),
+                                 group="stm")) %>% # Similar to Bristol Bay, create St. Matthews grouping factor
+              mutate(stratum="Crab Mgmt Areas"))
+
 ggplot() + 
-  geom_polygon(data=tidy(readOGR(dsn="Data",layer="AKbasemap",verbose=FALSE)) %>% # Load basemap
+  geom_polygon(data=tidy(readOGR(dsn="Data",
+                                 layer="AKbasemap",
+                                 verbose=FALSE)) %>% # Load basemap
                  mutate(long2=ifelse(long<0,long+360,long))
                ,aes(x=long2,y=lat,group=factor(group)),fill="grey70") +
-  geom_polygon(data=newdata,aes(long2,lat,group=factor(group)),fill=NA,color="black") + 
+  geom_polygon(data=newdata,aes(long2,lat,group=factor(group)),
+               fill=NA,
+               color="black") + 
   facet_wrap(~stratum,ncol=2) +
   coord_map("albers",lat0=54,lat1=62,xlim=c(xmin,xmax),ylim=c(ymin,ymax)) + 
   theme_void()
@@ -115,19 +126,23 @@ library(httr) # For pulling data via a URL
 library(tidyverse) # Data manipulation
 library(lubridate) # Date formatting
 
-head(httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20220101'), type = "application/json") %>% 
-  bind_rows)
+head(httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20220101'), 
+  type = "application/json") %>% 
+    bind_rows)
 ```
 
 With this tool, users can easily incorporate SST data into stock assessments and other processes. For example, one could plot a time series of average summer SST for NMFS areas 640 and 650.   
 
 ```{r, message=FALSE, fig.cap="June-August SST 1985-2020 in EGOA NMFS areas."}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), 
+  type = "application/json") %>% 
   bind_rows %>% 
   mutate(MONTH=month(as_date(READ_DATE))) %>% # Extract month from the date
   filter(MONTH==6 | MONTH==7 | MONTH==8) %>% # Filter summer months
   group_by(YEAR,NMFSAREA)%>%
-    summarize(SST=mean(MEANSST))%>% # Average the data by year and area.
+  summarize(SST=mean(MEANSST))%>% # Average the data by year and area.
   ggplot(aes(as.numeric(YEAR),SST)) + 
   geom_line() + 
   facet_wrap(~NMFSAREA, nrow=2) +
@@ -142,16 +157,20 @@ The web service enables a query using a URL, where the URL the query parameters.
 
 
 ```{r}
-httr::content(httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640"), type = "application/json")%>% 
+httr::content(
+  httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640"), 
+  type = "application/json")%>% 
   bind_rows #By default the URL returns a list. "bind_rows" convert to data frame/tibble
 ```
- 
- 
+
+
 # Time Series
 To query a date range, specify "start_date" and "end_date", "read_date", or "dates_back" parameters. Separate parameters with an "&". Most users will want the entire time series, which starts on 1985-01-01. To query the entire time series, specify "start_date" & "end_date". "end_date" must be included, but if you do not know the most recent date of the time series, you can choose an end date some time in the future and it will query all of the data that exist.  
 
 ```{r}
-data <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20220101'), type = "application/json") %>% 
+data <- httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20220101'), 
+  type = "application/json") %>% 
   bind_rows
 
 head(data)
@@ -170,7 +189,9 @@ Any time range can be chosen with "start_date" and "end_date". For example, SST 
 
 
 ```{r, message=FALSE, fig.cap="SST for 1987 in NMFS area 640."}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19870101&end_date=19880101'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19870101&end_date=19880101'), 
+  type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
   ggplot(aes(date,MEANSST)) + 
@@ -184,7 +205,9 @@ You can query a specific date with "read_date". For example SST in MFS 640 on Y2
 
 ```{r}
 #Query the day after your date of interest because omitting the time component in read_date misses that day's reading.
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101'), 
+  type = "application/json") %>% 
   bind_rows 
 ```
 
@@ -193,21 +216,27 @@ You can specify a number of days prior to any date using a "days_back" parameter
 
 
 ```{r}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101&days_back=2'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101&days_back=2'), 
+  type = "application/json") %>% 
   bind_rows 
 ```
 
 If "read_date" is not specified, "days_back" returns the most recent SSTs. Here are SSTs for the last three days in NMFS 640.  
 
 ```{r}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&days_back=2'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&days_back=2'), 
+  type = "application/json") %>% 
   bind_rows 
 ```
 # Spatial Extents  
 To query multiple areas, separate the values by a comma. For example to query NMFS areas 640 and 650 (Southeast Alaska outside waters).  
 
 ```{r}
-httr::content(httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650"), type = "application/json")%>% 
+httr::content(
+  httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650"), 
+  type = "application/json")%>% 
   bind_rows
 ```
 
@@ -223,14 +252,18 @@ unique(lkp$Ecosystem_sub)
 To query the data for the "Southeastern Bering Sea", for example, add "ecosystem_sub=Southeastern%20Bering%20Sea", where spaces are filled by "%20".  
 
 ```{r}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json") %>%
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), 
+  type = "application/json") %>%
   bind_rows
 ```
 
 Putting the pieces together - data can be queried directly from AKFIN and saved, manipulated, or visualized directly. Here we query and plot the full time series for the Eastern Gulf of Alaska and for the Eastern Aleutian Islands.    
 
 ```{r, message=FALSE, fig.cap="Eastern GOA and Eastern Aleutians SST from 1985 - Present."}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska,Eastern%20Aleutians&start_date=19850101&end_date=20220101'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska,Eastern%20Aleutians&start_date=19850101&end_date=20220101'), 
+  type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
   ggplot(aes(date,MEANSST)) + 
@@ -242,7 +275,9 @@ One could query and summarize data by month (week, year, etc) by simply grouping
 
 ```{r, message=FALSE, fig.cap="Annual average SST for NMFS areas 640 and 650."}
 #Note that year is a character so it needs to be converted to an integer for continuous plotting.
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), type = "application/json") %>% 
+httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), 
+  type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE),
          YEAR=as.numeric(YEAR)) %>%  
@@ -262,7 +297,9 @@ With the daily time series for a spatial stratum, implementation of the heatwave
 For illustration purposes, we save SST data as an object in the first code chunk but alternatively, the data query could be piped directly into the MHW code chunk that follows to avoid creating an intermediate object.    
 
 ```{r}
-updateddata <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20211231'), type = "application/json") %>% 
+updateddata <- httr::content(
+  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20211231'), 
+  type = "application/json") %>% 
   bind_rows %>% 
   mutate(date=as_date(READ_DATE)) %>% 
   data.frame %>% 
@@ -274,9 +311,9 @@ The detect_event() and the ts2clm() functions from **heatwaveR** will calculate 
 ```{r}
 library(heatwaveR)
 mhw <- detect_event(ts2clm(updateddata %>% 
-                              rename(t=date,temp=meansst) %>% 
-                              arrange(t),
-                              climatologyPeriod = c("1985-01-01", "2014-12-31"))) #Specify baseline period
+                             rename(t=date,temp=meansst) %>% 
+                             arrange(t),
+                           climatologyPeriod = c("1985-01-01", "2014-12-31"))) #Specify baseline period
 
 ```
 
@@ -287,11 +324,15 @@ To create the common "flame" plots for MHWs, extract the climatology object from
 mhw_clim <- mhw$climatology %>% filter(t>=as.Date("2018-12-01"))  #Extract the MHW data
 
 ggplot(data = mhw_clim, aes(x = t)) +
-  geom_flame(aes(y = temp, y2 = thresh, fill = "all"), show.legend = T) +
-  geom_flame(data = mhw_clim, aes(y = temp, y2 = thresh, fill = "top"),  show.legend = T) +
+  geom_flame(aes(y = temp, y2 = thresh, fill = "all"),
+             show.legend = T) +
+  geom_flame(data = mhw_clim, aes(y = temp, y2 = thresh, fill = "top"),  
+             show.legend = T) +
   geom_line(aes(y = temp, colour = "temp")) +
-  geom_line(aes(y = thresh, colour = "thresh"), size = 1.0) +
-  geom_line(aes(y = seas, colour = "seas"), size = 1.2) +
+  geom_line(aes(y = thresh, colour = "thresh"), 
+            size = 1.0) +
+  geom_line(aes(y = seas, colour = "seas"), 
+            size = 1.2) +
   scale_colour_manual(name = "Line Colour",
                       values = c("temp" = "black", 
                                  "thresh" =  "forestgreen", 
@@ -311,13 +352,15 @@ Tweak the image slightly to add the intensity categories of the MHWs. To illustr
 #  Here we'll use an example where we do not save the SST data as a separate object first, simply embedding it into the ts2clm() function.
 
 clim_cat <- (detect_event(ts2clm(
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850101&end_date=20211231'), 
-type = "application/json") %>% 
-                                   bind_rows %>% 
-                                   mutate(date=as_date(READ_DATE)) %>% 
-                                   data.frame %>% 
-                                   dplyr::select(t=date,temp=MEANSST) %>% 
-                                   arrange(t), climatologyPeriod = c("1985-01-01", "2014-12-31"))))$climatology %>% #Specify the baseline period.
+  httr::content(
+    httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850101&end_date=20211231'),
+    type = "application/json") %>% 
+    bind_rows %>% 
+    mutate(date=as_date(READ_DATE)) %>% 
+    data.frame %>% 
+    dplyr::select(t=date,temp=MEANSST) %>% 
+    arrange(t), 
+  climatologyPeriod = c("1985-01-01", "2014-12-31"))))$climatology %>% #Specify the baseline period.
   dplyr::mutate(diff = thresh - seas,
                 thresh_2x = thresh + diff,
                 thresh_3x = thresh_2x + diff,
@@ -333,7 +376,7 @@ lineColCat <- c(
   "2x Threshold" = "darkgreen",
   "3x Threshold" = "darkgreen",
   "4x Threshold" = "darkgreen"
-  )
+)
 
 # Set category fill colours
 fillColCat <- c(
@@ -341,20 +384,30 @@ fillColCat <- c(
   "Strong" = "#ff6900",
   "Severe" = "#9e0000",
   "Extreme" = "#2d0000"
-  )
+)
 
 ggplot(data = clim_cat, aes(x = t, y = temp)) +
   geom_flame(aes(y2 = thresh, fill = "Moderate")) +
   geom_flame(aes(y2 = thresh_2x, fill = "Strong")) +
   geom_flame(aes(y2 = thresh_3x, fill = "Severe")) +
   geom_flame(aes(y2 = thresh_4x, fill = "Extreme")) +
-  geom_line(aes(y = thresh_2x, col = "2x Threshold"), size = 0.7, linetype = "dashed") +
-  geom_line(aes(y = thresh_3x, col = "3x Threshold"), size = 0.7, linetype = "dotdash") +
-  geom_line(aes(y = thresh_4x, col = "4x Threshold"), size = 0.7, linetype = "dotted") +
-  geom_line(aes(y = seas, col = "Climatology"), size = 0.7) +
-  geom_line(aes(y = thresh, col = "Threshold"), size = 0.7) +
-  geom_line(aes(y = temp, col = "Temperature"), size = 0.6) +
-  scale_colour_manual(name = NULL, values = lineColCat,
+  geom_line(aes(y = thresh_2x, col = "2x Threshold"), 
+            size = 0.7, 
+            linetype = "dashed") +
+  geom_line(aes(y = thresh_3x, col = "3x Threshold"), 
+            size = 0.7, 
+            linetype = "dotdash") +
+  geom_line(aes(y = thresh_4x, col = "4x Threshold"), 
+            size = 0.7, 
+            linetype = "dotted") +
+  geom_line(aes(y = seas, col = "Climatology"), 
+            size = 0.7) +
+  geom_line(aes(y = thresh, col = "Threshold"), 
+            size = 0.7) +
+  geom_line(aes(y = temp, col = "Temperature"), 
+            size = 0.6) +
+  scale_colour_manual(name = NULL, 
+                      values = lineColCat,
                       breaks = c("Temperature", "Climatology", "Threshold",
                                  "2x Threshold", "3x Threshold", "4x Threshold")) +
   scale_fill_manual(name = NULL, values = fillColCat, guide = FALSE) +
@@ -376,8 +429,8 @@ The gridded SST data (Fig. BB) are stored within the AFSC schema on the AKFIN Or
 
 
 ```{sql, connection=con,output.var="data"}
-      select * from  afsc.erddap_crw_sst_spatial_lookup 
-      where rownum<=5
+select * from  afsc.erddap_crw_sst_spatial_lookup 
+where rownum<=5
 ```
 
 ```{r,echo=F}
@@ -391,8 +444,8 @@ data
 Figure BB. Screenshot of the AFSC.ERDDAP_CRW_SST table.
 
 ```{sql, connection=con,output.var="data"}
-      select * from  afsc.erddap_crw_sst 
-      where rownum<=5
+select * from  afsc.erddap_crw_sst 
+where rownum<=5
 ```
 
 ```{r,echo=F}
@@ -409,13 +462,13 @@ The following query demonstrates the primary key relationship between the data a
 
 ```{sql, connection=con,output.var="data"}
 select read_date,
-       temp,
-       to_char(read_date,'YYYY') as Year,
-       crab
+        temp,
+        to_char(read_date,'YYYY') as Year,
+        crab
 from   afsc.erddap_crw_sst a
-       INNER JOIN (select * from afsc.erddap_crw_sst_spatial_lookup
-                   where crab <> 'NA') b
-         ON a.crw_id =b.id
+INNER JOIN (select * from afsc.erddap_crw_sst_spatial_lookup
+where crab <> 'NA') b
+ON a.crw_id =b.id
 where rownum<=5
 ```
 
