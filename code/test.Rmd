@@ -1,0 +1,40 @@
+---
+output:
+  word_document:
+    pandoc_args: ["--metadata-file=header.yaml"]
+    reference_docx: styles_reference.docx
+    df_print: kable
+csl: "../cite/citestyle.csl"
+bibliography: "../cite/webservice_biblio.bib"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, error = FALSE, message = FALSE)
+```
+
+# Methods & Results
+
+
+```{r,include=F}
+library(tidyverse)
+library(DBI) #  For database query
+library(odbc)
+library(kableExtra)
+library(knitr)
+library(sp) # For maps
+library(rgdal) # For maps
+library(broom)
+library(heatwaveR)
+
+```
+
+
+```{r}
+df <- httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json") %>%
+  bind_rows %>% 
+  data.frame
+
+kable(df)
+```
+
+
