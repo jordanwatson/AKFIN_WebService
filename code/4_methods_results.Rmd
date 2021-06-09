@@ -428,12 +428,12 @@ This section is not meant to serve as a SQL tutorial. Rather, its purpose is to 
 The gridded SST data (Fig. BB) are stored within the AFSC schema on the AKFIN Oracle database and the primary key linking the lookup tables (Fig. AA) with the gridded data is the ID field. In the lookup table, it is simply “ID” and in the data table it is “CRW_ID”. 
 
 
-```{sql, connection=con,output.var="data"}
+```{sql, connection=con}
 select * from  afsc.erddap_crw_sst_spatial_lookup 
 where rownum<=5
 ```
 
-```{r,echo=F}
+```{r,echo=F,eval=F}
 # data %>% 
 #   kbl(digits=2,
 #       format.args = list(big.mark = ',')) %>%
@@ -441,26 +441,27 @@ where rownum<=5
 #                 font_size = 10)
 data
 ```
-Figure BB. Screenshot of the AFSC.ERDDAP_CRW_SST table.
 
-```{sql, connection=con,output.var="data"}
+```{sql, connection=con}
 select * from  afsc.erddap_crw_sst 
 where rownum<=5
 ```
 
-```{r,echo=F}
+CRW SST query within SQL Developer. Several columns reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns.
+
+```{r,echo=F,eval=F}
 # data %>% 
 #   kbl(digits=2,
 #       format.args = list(big.mark = ',')) %>%
 #   kable_styling(fixed_thead = TRUE,
 #                 font_size = 10)
-data
+#data
 ```
-Figure AA. Screenshot of a CRW SST query within SQL Developer. Several columns reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns.    
+    
 
 The following query demonstrates the primary key relationship between the data and lookup tables. In this case, we query SST (“TEMP”) data that fall within a crab management area and we add a field for “Year” (Fig. CC).
 
-```{sql, connection=con,output.var="data"}
+```{sql, connection=con}
 select read_date,
         temp,
         to_char(read_date,'YYYY') as Year,
@@ -472,16 +473,17 @@ ON a.crw_id =b.id
 where rownum<=5
 ```
 
+CRW SST query for records that fall within a crab management area. 
 
-```{r,echo=F}
+```{r,echo=F,eval=F}
 # data %>%
 #   kbl(digits=2,
 #       format.args = list(big.mark = ',')) %>%
 #   kable_styling(fixed_thead = TRUE,
 #                 font_size = 10)
-data
+#data
 ```
-Figure CC. Screenshot of a CRW SST query for records that fall within a crab management area. 
+
 
 ```{r Query_CRW_Crab_plot}
 dbFetch(dbSendQuery(con,
@@ -501,6 +503,6 @@ dbFetch(dbSendQuery(con,
   geom_smooth()
 ```
 
-Figure DD. Screenshot of a plotted query of Bristol Bay crab management area SST data averaged daily and plotted with default smoothing.
+Plotted query of Bristol Bay crab management area SST data averaged daily and plotted with default smoothing.
 
 
