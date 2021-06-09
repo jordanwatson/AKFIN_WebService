@@ -23,7 +23,7 @@ params <- read_csv("markdown_odbc_params.csv")
 
 #  Connect to the AKFIN database
 # con <- dbConnect(odbc::odbc(), "akfin", UID=rstudioapi::askForPassword("Enter AKFIN Username"), PWD= rstudioapi::askForPassword("Enter AFSC Password"))
-con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
+# con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
 ```
 
 Methods & Results
@@ -41,9 +41,8 @@ To develop operational data products across Alaska’s suite of spatial strata, 
 
 ```{r makemap}
 #  Load an AK Basemap
-akmap <- readOGR(dsn="Data",layer="AKbasemap")
 #  Convert the object to a ggmap object
-ak <- tidy(akmap) %>% 
+ak <- tidy(readOGR(dsn="Data",layer="AKbasemap")) %>% 
   mutate(long2=ifelse(long<0,long+360,long))
 
 xmin <- 165
@@ -65,7 +64,7 @@ crab <- readOGR(dsn="../../Other_People/Erin_Fedewa/Data",layer="BristolBay") %>
          group="bb") %>% 
   bind_rows(readOGR(dsn="../../Other_People/Erin_Fedewa/Data",layer="St_Matthew_District") %>% 
               fortify() %>% 
-              mutate(long2=ifelse(long<0,long+360,long)
+              mutate(long2=ifelse(long<0,long+360,long),
                      group="stm"))
 
 #  Merge the different polygon fields and shapefiles.
