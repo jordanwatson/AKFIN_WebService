@@ -29,7 +29,14 @@ params <- read_csv("markdown_odbc_params.csv")
 con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
 ```
 
-# Automated and Operational access to environmental data for Alaska’s management areas
+</br>
+
+# `Automated and Operational access to environmental data for Alaska’s management areas `
+
+`Jordan T Watson and Matthew W Callahan`
+
+
+</br>
 
 
 # Abstract
@@ -531,3 +538,7 @@ Plotted query of Bristol Bay crab management area SST data averaged daily and pl
 
 
 # Discussion  
+
+The ability to integrate environmental and fishery data sets in near real-time is fundamental to an increasing number of fishery management priorities. However, creating automated database infrastructure is beyond the expertise of most of the users of such data. Working with AKFIN programmers, we developed a 
+
+
