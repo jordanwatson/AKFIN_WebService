@@ -477,7 +477,7 @@ ggplot(data = clim_cat,
 
 **Oracle database queries**
 
-Some data users prefer the flexibility and transparency of querying raw gridded data directly from the Oracle server. This is particularly useful for larger queries (e..g, millions of records) or for exploring data across a suite of different spatial extents (e.g., custom depth ranges, shapefiles, etc.). As we note in the web services section, such custom queries can also be automated by working with AFSC and AKFIN staff. However, for users that prefer to code their own queries, we provide several examples here. Notably, to query directly from the database, users will need an AKFIN database account, which can be provided by contacting the authors of this document.  
+Some data users prefer the flexibility and transparency of querying raw gridded data directly from the Oracle server. This is particularly useful for larger queries (e..g, millions of records) or for exploring data across a suite of different spatial extents (e.g., custom depth ranges, shapefiles, etc.). As we note in the web services section, such custom queries can also be automated by working with Alaska Fisheries Science Center (AFSC) and AKFIN staff. However, for users that prefer to code their own queries, we provide several examples here. Notably, to query directly from the database, users will need an AKFIN database account, which can be provided by contacting the authors of this document.  
 
 This section is not meant to serve as a SQL tutorial. Rather, its purpose is to orient users to the structure of the database related to the SST data and lookup tables. We assume that users interested in querying the database directly via Oracle (e.g., SQL Developer) or through odbc connections from R or Python are already acquainted with the coding and configuration settings. However, interested users can contact the authors for assistance establishing such connections or custom SQL queries.  
 
@@ -536,9 +536,15 @@ dbFetch(dbSendQuery(con,
 
 Plotted query of Bristol Bay crab management area SST data averaged daily and plotted with default smoothing.
 
+**Matching SST data with fishery-dependent data (should this just be a paragraph in the discussion?)**
+The above sections demonstrate access to gridded or raw SST data that are updated daily within AKFIN. In addition to raw SST data access, the daily SST data are also integrated within the AKFIN back-end to observer and fish ticket data. For both of these fishery-dependent data sets, the MUR SST data have been used, and users with access to these confidential data sets through AKFIN can find an SST field in the comprehensive_ft and comprehensive_haul (check table names) tables.   
+
+Observer data include latitudes and longitudes of gear deployment and retrieval locations, which are matched with the nearest gridded SST data for a given date. The temperature data are then averaged across the retrieval and deploy points to yield a single SST datum for each observed fishing event.  
+
+Fish ticket spatial data are recorded at the scale of ADF&G statistical areas (typically 0.5 degree latitude x 1.0 degree longitude), so gridded SST data cannot be matched as directly. Instead, daily SST data for all gridded locations within each statistical area (N=1758) are averaged, to yield a single daily datum for each of the statistical areas. These daily average data are then matched with the reported statistical areas on fish tickets based on the date that fishing was reported to have begun within a particular statistical area.   
 
 # Discussion  
 
-The ability to integrate environmental and fishery data sets in near real-time is fundamental to an increasing number of fishery management priorities. However, creating automated database infrastructure is beyond the expertise of most of the users of such data. Working with AKFIN programmers, we developed a 
+The ability to integrate environmental and fishery data sets in near real-time is fundamental to an increasing number of fishery management priorities. However, creating automated database infrastructure is beyond the expertise of most users of such data. Working with AKFIN programmers, we developed a back-end database infrastructure that automatically clips SST data to areas of interest identified by a suite of end users at the AFSC. These data can then be accessed either in gridded form, using direct database queries, or in aggregate form, using  
 
 
