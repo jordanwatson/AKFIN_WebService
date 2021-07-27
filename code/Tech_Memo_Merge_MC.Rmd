@@ -692,7 +692,7 @@ BASE<-tidy(readOGR(dsn="Data",
                         layer="AKbasemap",
                         verbose=FALSE)) # Load basemap
 
-ggplot()+geom_tile(data=sst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
+ggplot()+geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
     geom_polygon(data=BASE,aes(x=long,y=lat,group=factor(group)),fill="gray40")+
     xlim(c(-145,-130))+ylim(c(53,60))+
     scale_fill_viridis_c()+
