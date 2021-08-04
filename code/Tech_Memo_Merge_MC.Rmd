@@ -65,6 +65,7 @@ Three daily satellite SST products were accessed via NOAA ERDDAP servers [@Simon
 The SST data sets used are from NOAA Coral Reef Watch (CRW), NASA Jet Propulsion Laboratory Multi-Scale Ultra-High Resoultion (MUR), and NOAA National Center for Environmental Information Optimal Interpolation (OI) (Table 1). ~~The National Environmental Satellite Data and Information Service recommends the CRW SST product and this is the primary dataset used in this study.~~ The data sets vary in spatial resolution and time-span. MUR SST has the finest spatial resolution while OI SST is the most course. Meanwhile OI SST includes the longest time series while MUR has the briefest. 
 
 (Insert Table 1 here)
+Table 1. Description of the three satellite data sets and their data products in the AKFIN database backend.
 
 All three data sets have native formats with longitudes ranging from -180 to +180. Because the spatial extent for Alaska waters includes the International Date Line, the data from each data set are downloaded via two separate operations each day. One operation downloads the negative longitude data from 46°N to 68.8°N and -180°E to -130°E and the second operation downloads the positive longitude data from 47.5°N to 60.0°N and 164°E to 180°E. These downloads are merged and then clipped to spatial regions of interest within the exclusive economic zone surrounding Alaska.
 
@@ -476,35 +477,31 @@ ggplot()+geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
 I don't actually have access to council.comprehensive_obs_v though I can access
 council.comprehensive_obs
 
-Probably sufficient below to just make a plot of shark v. SST instead of the whole prediction stuff.
-But I'm happy with whatever really!
+Probably sufficient below to just make a histogram of SST where sharks are caught? mursst %>% ggplot(aes(SST)) + geom_histogram()
+But I'm happy with whatever really - I'll leave that to you!
 
 **R / SQL Code Input - 3** 
 ```{r Query_MUR_Obs_Data}
 #Connect MUR SST with observer data to model whether SST influenced salmon shark catch in the GOA trawl fleet
   #Fortunately AKFIN already connected observer data with MUR SST in the comprehensive observer data view so we can just query that
   #Data are limited to GOA (not AI) and pelagic trawl gear
-  mursst<-dbFetch(dbSendQuery(con,
-                           paste0(
-"select distinct(a.haul_join), a.avg_sst_celsius as SST, b.obs_specie_code
-from council.comprehensive_obs_v a
-left join (select obs_specie_code, haul_join
-from council.comprehensive_obs_v 
-where obs_specie_code=67) b
-on a.haul_join=b.haul_join
-where a.reporting_area_code>= 620 and
-a.avg_sst_celsius>0 and
-a.akr_gear_code = 'PTR'")))
-  mursst<-mursst %>% mutate(shark=ifelse(is.na(OBS_SPECIE_CODE),0,1))
+mursst<-dbFetch(dbSendQuery(con,
+                            paste0(
+                              "select distinct(a.haul_join), a.avg_sst_celsius as SST, b.obs_specie_code
+                                from council.comprehensive_obs a
+                                left join (select obs_specie_code, haul_join
+                                from council.comprehensive_obs 
+                                where obs_specie_code=67) b
+                                on a.haul_join=b.haul_join
+                                where a.reporting_area_code>= 620 and
+                                a.avg_sst_celsius>0 and
+                                a.akr_gear_code = 'PTR'")))
+
+mursst<-mursst %>% mutate(shark=ifelse(is.na(OBS_SPECIE_CODE),0,1))
 model<-glm(shark~SST, data=mursst, family="binomial")
 summary(model)  
 dummy<-data.frame(SST=seq(min(mursst$SST), max(mursst$SST), len=500))
 dummy$shark<-predict(model, dummy, type="response")
 plot(shark ~ SST, data=mursst, col="steelblue")
 lines(shark ~ SST, data=dummy, lwd=2)
-
-mursst %>% 
-  mutate(shark=ifelse(is.na(OBS_SPECIE_CODE),0,1)) %>% 
-  ggplot(aes(shark,SST)) + 
-  geom_point()
 ```
