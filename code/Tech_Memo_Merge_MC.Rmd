@@ -42,35 +42,38 @@ con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
 
 # Abstract
 
-The proliferation of operational satellite data has facilitated downstream data products catered towards specific fisheries applications in near real-time. The Alaska Fisheries Science Center (AFSC) and Alaska Fisheries Information Network (AKFIN) have utilized such data accessibility to develop processes that streamline use of satellite sea surface temperature (SST) data. Here we briefly describe data products used and present two such processes: 1) aggregated SST by management regions of interest and 2) a suite of fishery-dependent data linked with spatially-explicit SST. To aggregate SST data, we clipped gridded SST data to regions of interest for Alaska fisheries management. Full gridded data sets apportioned to management can be queried from the AKFIN database. Alternatively, aggregated data products (e.g., time series of SST for individual NMFS regions or ecosystem areas) can be accessed via a custom AKFIN SST web service. We demonstrate several queries of the web service and illustrate how this product can yield seamless integration with downstream analyses. For fisheries dependent data (i.e. fish-ticket or observer), sea surface temperature (SST) data were linked to all fish tickets and observer in the Oracle backend from 2002 - present (more than one million records), and new data are automatically matched each day. We provide examples of how these processes facilitate efficient use of SST data, and describe opportunities for expansion of these services.
+The proliferation of operational satellite data has facilitated downstream data products catered towards specific fisheries applications in near real-time. The Alaska Fisheries Science Center and Alaska Fisheries Information Network (AKFIN) have utilized such data accessibility to streamline use of satellite sea surface temperature (SST) data. We briefly describe three gridded satellite data sets and we present two data products that are updated automatically and regularly in a database backend: 1) satellite SST data linked to spatial management regions across Alaska and 2) spatially-explicit fishery-dependent data (e.g., observer, fish ticket, and vessel monitoring system [VMS] data) linked with satellite SST data. Full gridded data sets apportioned to management areas can be queried from the AKFIN database. Alternatively, aggregated data products (e.g., time series of SST for individual management regions or ecosystem areas) can be accessed via a custom AKFIN SST web service. We demonstrate several queries of the web service and illustrate how this product can yield seamless integration with downstream analyses. For fisheries-dependent data, SST data were linked to fish tickets, observer, and VMS in the Oracle backend from 2002 - present (millions of records), and new data are automatically matched each day. We provide examples of how these processes facilitate efficient use of SST data, and describe opportunities for expansion of these services.
 
 
 # Introduction
 
 The role of oceanographic and other environmental or ecosystem parameters on the productivity of the world’s fish stocks has long been established. Increasingly, such parameters are explicitly incorporated into fisheries stock assessments [@Holsman2016; @Marshall2019], risk assessments [@Gaichas2014]; ecosystem reports [@Ferriss2020; @Ortiz2020; @Siddon2020], or other documents used by the U.S. Regional Fishery Management Councils to guide decision making. Meanwhile, a growing trend in the development of dynamic ocean management tools seeks to incorporate environmental information in near real-time to inform stakeholders for bycatch avoidance [@Hazen2018; @Breece2021], harmful algal blooms [@Harley2020], avoiding interactions with protected species (https://oceanview.pfeg.noaa.gov/whale_indices/), and more. Thus, as NOAA moves towards a broader adoption of ecosystem-based fisheries management and dynamic ocean management, the accessibility of ecosystem information becomes increasingly critical.   
 
-One of the most fundamental ecosystem parameters considered in fisheries is water temperature. Temperature regulates the timing and intensity of primary production, which has ripple effects on secondary producers and on to higher trophic levels. Temperature directly impacts fish growth and other metabolic processes in addition to regulating the location and abundance of prey. Thus, for most mobile fish species, temperature often defines the habitat of the species, and subsequently, the location of the fishing fleets that target them [@Haynie2012; @Watson2018; @Rogers2019].   
+~~One of the most fundamental ecosystem parameters considered in fisheries is water temperature. Temperature regulates the timing and intensity of primary production, which has ripple effects on secondary producers and on to higher trophic levels. Temperature directly impacts fish growth and other metabolic processes in addition to regulating the location and abundance of prey. Thus, for most mobile fish species, temperature often defines the habitat of the species, and subsequently, the location of the fishing fleets that target them [@Haynie2012; @Watson2018; @Rogers2019].~~
 
 As global climate changes, water temperatures have been among the most easily measured metrics by which to understand how ocean ecosystems are responding. Broad warming trends are leading to poleward shifts in the distributions of fish species and the fleets that target them [@Kotwicki2013; @Rogers2019; @Pinsky2020; @Fredston2021], while anomalously warm periods or marine heatwaves are driving protracted impacts on ecosystems [@Suryan2021] and commercial fish stocks [@Barbeaux2020]. Such dynamics underscore the need for reliable access to near real-time water temperature data.    
 
-Satellite-derived sea surface temperature data are well validated have been available since the early 1980s (Minnett et al., 2019). A proliferation of new technologies, sensors, and data products have led to increasingly frequent and spatially resolved information with latencies as little as one day (Liu et al., 2015; Maturi et al., 2017; Minnett et al., 2019). Moreover, the development of programs like NOAA’s CoastWatch and data technologies like Environmental Research Division's data access program (ERDDAP) servers (Simons 2020) have facilitated easier access to these data worldwide in near real-time and via a suite of data formats. While such technologies have improved data access, challenges still exist for some end users due to the large file sizes of high spatial and temporal resolution data sets, difficulty subsetting data within irregular polygons (custom spatial strata), and the need for data infrastructure that supports operationalization and automation of data ingestion (Welch et al., 2019).   
+Satellite-derived sea surface temperature (SST) data are well validated and have been available since the early 1980s [@Minnett2019]. A proliferation of new technologies, sensors, and data products have led to increasingly frequent and spatially resolved SST data with latencies as little as one day [@Liu2015; @Maturi2017; @Minnett2019]. Moreover, the development of programs like NOAA’s CoastWatch and data technologies like Environmental Research Division's data access program (ERDDAP) servers [@Simons2020] have facilitated easier access to these data worldwide in near real-time and via a suite of data formats. While such technologies have improved data access, challenges still exist for some end users due to the large file sizes of high spatial and temporal resolution data sets, difficulty subsetting data within irregular polygons (custom spatial strata), and the need for data infrastructure that supports operationalization and automation of data ingestion [@Welch2019].   
 
-After assessing the needs of a suite of fisheries biology, stock assessment, and socio-ecological modeling efforts at the AFSC, we developed an automated and operational framework for serving satellite environmental data products for a suite of spatial strata used for fisheries management and research in Alaska. These are products initiated by AFSC requests, and developed by AKFIN and AFSC staff in the AKFIN database environment. We describe the data used, the process for joining the data to spatial strata, data access through customized web services (data queries via URL), and backend database merges with fishery dependent data (e.g. observer and fish ticket data).
+After assessing the needs of a suite of fisheries biology, stock assessment, and socio-ecological modeling efforts at the AFSC, we developed an automated and operational framework for serving satellite environmental data products for a suite of spatial strata used for fisheries management and research in Alaska. These are products initiated by AFSC requests, and developed by AKFIN and AFSC staff in the AKFIN database environment. We describe the data used, the process for joining the data to spatial strata, data access through customized web services (data queries via URL), and backend database merges with fishery dependent data (e.g. observer, fish ticket, VMS data).
 
 # Methods & Results
 
 *Satellite data*   
-For this study, three daily satellite sea surface temperature (SST) products were used, all of which were accessed via NOAA ERDDAP servers [@Simons2020] and downloaded as netCDF files within the Oracle database backend at the Alaska Fisheries Information Network (AKFIN), maintained by the Pacific States Marine Fisheries Commission. The SST data are publicly available but by ingesting them into the AKFIN backend, they can be seamlessly merged, behind the NOAA firewall, with confidential fishery-dependent data sets like observer data, vessel monitoring system (VMS) data, and fish tickets. These SST products provide gap-free data each day with a 1-2 day latency period. 
-The data sets used are the NOAA Coral Reef Watch (CRW),  NASA Jet Propulsion Laboratory Multi-Scale Ultra-High Resoultion (MUR), and NOAA National Center for Environmental Information Optimal Interpolation (OI) SSTs (Table 1). The National Environmental Satellite Data and Information Service (NESDIS) recommends the CRW SST product and this is the primary dataset used in this study. The data sets vary in spatial resolution and time-span. MUR SST has the finest spatial resolution while OI SST is the most course, and OI SST extends furthest back while MUR has the shortest duration available. The CRW data is intermediate between  data are obtained from the NOAA Coral Reef Watch Program intermediate between MUR and OI SST with a 0.05° x 0.05° (5 km) spatial grid from 1985-present. 
+Three daily satellite SST products were accessed via NOAA ERDDAP servers [@Simons2020] and downloaded as netCDF files within the Oracle database backend at the Alaska Fisheries Information Network (AKFIN), maintained by the Pacific States Marine Fisheries Commission. The SST data are publicly available but by ingesting them into the AKFIN backend, they can be seamlessly merged, behind the NOAA firewall, with confidential fishery-dependent data sets like observer, VMS, fish ticket data. These SST products provide gap-free data each day with a 1-2 day latency period. 
 
-All three data sets have native formats with longitudes ranging from -180 to +180. Because the spatial extent for Alaska waters includes the International Date Line, the daily data are downloaded via two separate operations each day. One operation downloads the negative longitude data from 46°N to 68.8°N and -180°E to -130°E and the second operation downloads the positive longitude data from 47.5°N to 60.0°N and 164°E to 180°E. These downloads are merged and then clipped to spatial regions of interest within the exclusive economic zone surrounding Alaska, yielding 212,813 SST records per day for the CRW data set.
+The SST data sets used are from NOAA Coral Reef Watch (CRW), NASA Jet Propulsion Laboratory Multi-Scale Ultra-High Resoultion (MUR), and NOAA National Center for Environmental Information Optimal Interpolation (OI) (Table 1). ~~The National Environmental Satellite Data and Information Service recommends the CRW SST product and this is the primary dataset used in this study.~~ The data sets vary in spatial resolution and time-span. MUR SST has the finest spatial resolution while OI SST is the most course. Meanwhile OI SST includes the longest time series while MUR has the briefest. 
+
+(Insert Table 1 here)
+
+All three data sets have native formats with longitudes ranging from -180 to +180. Because the spatial extent for Alaska waters includes the International Date Line, the data from each data set are downloaded via two separate operations each day. One operation downloads the negative longitude data from 46°N to 68.8°N and -180°E to -130°E and the second operation downloads the positive longitude data from 47.5°N to 60.0°N and 164°E to 180°E. These downloads are merged and then clipped to spatial regions of interest within the exclusive economic zone surrounding Alaska.
 
 *Spatial strata*
-State and Federal waters of Alaska include numerous spatial strata that are relevant to fisheries management, ecology, and individual species distributions. For example, the Alaska Department of Fish & Game (ADF&G) divides Alaskan waters into nearly 1,800 statistical areas, many of which are 0.5° latitude by 1.0° longitude boxes. Meanwhile, the National Marine Fisheries Service (NMFS) divides the same waters into only 25 management areas. However, these regulatory strata are inconsistent with ecological stratifications (Eastern Bering Sea, Gulf of Alaska, and the Aleutian Islands) identified for the same waters. These ecosystem regions, even when subdivided, do not necessarily align with spatial strata identified for individual fish or crab stocks, so stock assessment scientists and fishery managers are often interested in yet further customized spatial boundaries. Thus it is not surprising that different users of environmental information like SST may want those data aggregated or clipped to a different (or multiple) spatial boundaries. 
+State and Federal waters of Alaska include numerous spatial strata that are relevant to fisheries management, ecology, and individual species distributions. For example, the Alaska Department of Fish & Game (ADF&G) divides Alaskan waters into nearly 1,800 statistical areas, many of which are 0.5° latitude by 1.0° longitude boxes. Meanwhile, the National Marine Fisheries Service (NMFS) divides the same waters into only 25 management areas. These regulatory strata are inconsistent with ecological stratifications (Eastern Bering Sea, Gulf of Alaska, and the Aleutian Islands) identified for the same waters. These ecosystem regions, even when subdivided, do not necessarily align with spatial strata identified for individual fish or crab stocks, so stock assessment scientists and fishery managers are often interested in yet further customized spatial boundaries. Thus, it is not surprising that different users of environmental information like SST may want those data aggregated or clipped to a different (or multiple) spatial boundaries. 
 
-To develop operational data products across Alaska’s suite of spatial strata, we undertook extensive point-in-polygon geoprocessing operations to apportion the individual latitude-longitude coordinates for both the MUR and CRW SST spatial grids to each of the polygons from a suite of shapefiles (ADF&G management areas, NMFS management areas, Ecosystem regions [from NMFS Ecosystem Status Reports], Bering Sea Integrated Ecosystem Research Program [BSIERP] regions, Bristol Bay red king crab management areas, and St. Matthew blue king crab management areas) (Fig. 1). To avoid repeating the computationally intensive point-in-polygon operations, we created spatial lookup tables that are stored in the backend of the AKFIN Oracle database system. Thus, as data are downloaded daily from ERDDAP servers across the spatial extent of Alaska’s waters, each SST record is matched via a database join on latitude and longitude to the spatial strata in which it falls.
+To develop operational data products across Alaska’s suite of spatial strata, we undertook extensive point-in-polygon processing operations to apportion the individual latitude-longitude coordinates for all three SST data sets to each of the polygons from a suite of shapefiles (ADF&G management areas, NMFS management areas, Ecosystem regions [from NMFS Ecosystem Status Reports], Bering Sea Integrated Ecosystem Research Program [BSIERP] regions, Bristol Bay red king crab management areas, and St. Matthew blue king crab management areas) (Fig. 1). To avoid repeating the computationally intensive point-in-polygon operations, we created spatial lookup tables that are stored in the backend of the AKFIN Oracle database system. Thus, as data are downloaded daily from ERDDAP servers across the spatial extent of Alaska’s waters, each SST record is matched via a database join on latitude and longitude to the spatial strata in which it falls.
 
-
+[Need to make sure we use the new shapefile map for the GOA ESR region. Come to think of it - need to change the lookup tables on the AKFIN server, too.]
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE,fig.height=6}
 xmin <- 165
@@ -146,119 +149,25 @@ Data ingested into AKFIN can be accessed and used for operational workflows via 
 
 ![Figure 2: Data flow diagram for the ingestion, processing, and extraction of satellite sea surface temperature data within AKFIN.](Data/MattDataFlowDiagram300dpi.jpg)
 
-
-
 *Customized Web Service (Web API)*
 
-For queries that are likely to be repeated often or to become part of an automated process, customized web services offer a particularly efficient data access option. These web services require no accounts, no passwords, no VPN - just internet and a web service URL can be readily embedded into programming applications (e.g., R, Python). An additional convenience is that web services allow users to query time series without storing data locally which is particularly helpful for operations that would typically append data to existing files (e.g., adding a new day of data to a time series). With this tool, users can easily incorporate SST data into stock assessments and other processes.
+For queries that are likely to be repeated often or to become part of an automated process, customized web services offer a particularly efficient data access option. These web services require no accounts, no passwords, no VPN - just internet - and a web service URL can be readily embedded into programming applications (e.g., R, Python). An additional convenience is that web services allow users to query time series without storing data locally which is particularly helpful for operations that would typically append data to existing files (e.g., adding a new day of data to a time series). With this tool, users can easily incorporate SST time series data into stock assessments and other workflows.
 
-The AKFIN web service web service enables a query of spatially aggregated CRW SST using a URL, where the URL contains the query parameters (Fig. 3). For example, in the URL “https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,” where “nmfs_area_crw_avg_sst?” is the name of the dataset. This is the daily SST data averaged by nmfs_area. A “?” separates the data set name from the query criteria. To query multiple areas, separate the values by a comma. Large Marine Ecosystem subregions are assessed in AFSC Ecosystem Status Reports (ESRs). The ecosystem_sub fields available for query include the regions within the Eastern Bering Sea, Aleutian Islands, and Gulf of Alaska. Spaces in region names are filled with “%20.” For example, to query the data for the “Southeastern Bering Sea,” for example, add “ecosystem_sub=Southeastern%20Bering%20Sea.” For the Bering Sea and Gulf of Alaska, the query filters only data where water depth is between 10 and 200m. For the Aleutian Islands, a depth filter is not implemented. Depth limits reflect preferences of Ecosystem Status Report contributors (e.g. Siddon 2020) and Analysts that are interested in data for different depth ranges, custom spatial bounds, or aggregated NMFS areas are encouraged to contact the authors.
+The AKFIN web service web service enables a query of spatially aggregated CRW SST using a URL, where the URL contains the query parameters (Fig. 3). For example, in the URL “https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,” where “nmfs_area_crw_avg_sst?” is the name of the dataset. This is the daily SST data averaged by nmfs_area. A “?” separates the data set name from the query criteria. To query multiple areas, separate the values by a comma. Large Marine Ecosystem subregions are assessed in AFSC Ecosystem Status Reports (ESRs). The ecosystem_sub fields available for query include the regions within the Eastern Bering Sea, Aleutian Islands, and Gulf of Alaska. Spaces in region names are filled with “%20.” For example, to query the data for the “Southeastern Bering Sea,” for example, add “ecosystem_sub=Southeastern%20Bering%20Sea.” For the Bering Sea and Gulf of Alaska, the query filters only data where water depth is between 10 and 200m. For the Aleutian Islands, a depth filter is not implemented. Depth limits reflect preferences of Ecosystem Status Report contributors (e.g. Siddon 2020) and analysts that are interested in data for different depth ranges, custom spatial bounds, or aggregated NMFS areas are encouraged to contact the authors.
 
 
 ![Figure 3: : Configuration of AKFIN web service URL parameters. A) Basic structure of the URL B) Multiple areas and time components. C) Additional time arguments. D) Importing webservice data into R using the httr package.  ](Data/Figure_3_url_format.jpg)
 
-To add a time component to a query, specify “start_date” and “end_date,” “read_date,” or “dates_back” parameters. If no time argument is included, the default behavior is to pull the single most recent datum record. Time parameters should be included after spatial parameters and separated by an “&.” Most users will want the entire time series (Fig. 4), which starts on 1985-01-01. To query the entire time series, specify “start_date” & “end_date.” “end_date” must be included, but if you do not know the most recent date of the time series, you can choose an end date some time in the future and it will query all of the data that exist. The full time series yields more than 13,000 rows of data per area (i.e., daily data from 1985-01-01 to present). Dates are queried in the “yyyymmdd” format, for example “19871214” queries December 14, 1987. The “read_date” argument retrieves data from any date in the time series, however, it is necessary to query the date after the desired day. The web service date format contains a time component, which is set to 12:00:00Z for each day, SST records were created after that time stamp, causing queries to return values for the previous date. Finally, a “days_back” parameter specification allows users to query any number of days prior a date of interest. If “read_date” is not specified, “days_back” returns the most recent SSTs. 
+To add a time component to a query, specify “start_date” and “end_date,” “read_date,” or “dates_back” parameters. If no time argument is included, the default behavior is to pull the single most recent record. Time parameters should be included after spatial parameters and separated by an “&”. Most users will want the entire time series, which starts on 1985-01-01. To query the entire time series, specify “start_date” & “end_date.” “end_date” must be included, but if you do not know the most recent date of the time series, you can choose an end date some time in the future and it will query all of the data that exist. The full CRW time series for a single spatial stratum yields more than 13,000 rows of data per area (i.e., daily data from 1985-01-01 to present). Dates are queried in the “yyyymmdd” format (e.g., “19871214” queries December 14, 1987). The “read_date” argument retrieves data from any date in the time series, however, it is necessary to query the date after the desired day. The web service date format contains a time component, which is set to 12:00:00Z for each day. SST records were created after that time stamp, causing queries to return values for the previous date. Finally, a “days_back” parameter specification allows users to query any number of days prior a date of interest. If “read_date” is not specified, “days_back” returns the most recent SSTs. 
 
-```{r, echo=FALSE,message=FALSE,warning=FALSE, fig.cap="Figure 4. SST for the Western Gulf of Alaska and Eastern Aleutains areas 1985-present"}
-httr::content(
-  httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Western%20Gulf%20of%20Alaska,Eastern%20Aleutians&start_date=19850101&end_date=20220101'), 
-  type = "application/json") %>% 
-  bind_rows %>% 
-  mutate(date=as_date(READ_DATE)) %>% 
-  ggplot(aes(date,MEANSST)) + 
-  geom_line() + 
-  facet_wrap(~ECOSYSTEM_SUB)
-```
+To access web services using R Statistical Software, we use the R package *httr* to pull data from a URL (Fig. 3), and the data format should be specified as json. The data can be saved as an object for manipulation or piped directly into downstream functions. Additional packages *tidyverse* and *lubridate* are recommended for plotting and manipulation but the object retrieved using *httr* could be manipulated using base R instead. Simply pasting the URL into a web browser would also display fetched data in that browser.
 
-To access web services using R Statistical Software, we recommend the R package httr to pull data from a URL (Fig. 3), and the data format should be specified as json. The data can be saved as an object for manipulation or piped directly into downstream functions. Additional packages tidyverse and lubridate are recommended for plotting and manipulation but the object retrieved using httr could be manipulated using base R instead. Simply pasting the URL into a web browser would also display fetched data in that browser.
+**Oracle database queries**  
+Some data users prefer the flexibility and transparency of querying raw gridded data directly from the Oracle server. This is particularly useful for larger queries (e.g., millions of records) or for exploring data across a suite of different spatial extents (e.g., custom depth ranges, shapefiles, etc.). To query directly from the database, users will need an AKFIN database account, which can be provided by contacting the authors of this document. As we note in the web services section, many custom database queries or views can also be automated by working with AKFIN staff (via contact with the authors).
 
- **heatwave calculations from web service queries**
-With the daily time series for a spatial stratum, implementation of the heatwaveR package [@W.Schlegel2018]  is straightforward. We encourage readers to explore the functionality described in the heatwaveR vignettes, from which the following examples are generated . We demonstrate a few simple examples using web services to query the SST time series (Supplement). To better illustrate the heatwave categories here, we select an example from the Northern Bering Sea from 2019-01-01 to 2019-12-31 (Fig. 5).  
+The gridded SST data are stored within the AFSC schema on the AKFIN Oracle database and the primary key linking the lookup tables (Table 2) with the gridded data is the ID field. In the lookup table, it is simply “ID” and in the CRW SST data table it is “CRW_ID.” Spatial columns in a query result may reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns. The following example query demonstrates the primary key relationship between the data and lookup tables. In this case, we query SST (“TEMP”) data that fall within a crab management area and we add a field for “Year”.
 
-```{r, echo=FALSE,message=FALSE,warning=FALSE, fig.cap="Figure 5. Marine heatwave flame plot for the Northern Bering Sea"}
-#  Here we'll use an example where we do not save the SST data as a separate object first, simply embedding it into the ts2clm() function.
-
-clim_cat <- (detect_event(
-  ts2clm(
-  httr::content(
-    httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850101&end_date=20211231'),
-    type = "application/json") %>% 
-    bind_rows %>% 
-    mutate(date=as_date(READ_DATE)) %>% 
-    data.frame %>% 
-    dplyr::select(t=date,temp=MEANSST) %>% 
-    arrange(t), 
-  climatologyPeriod = c("1985-01-01", "2014-12-31"))))$climatology %>% #Specify the baseline period.
-  dplyr::mutate(diff = thresh - seas,
-                thresh_2x = thresh + diff,
-                thresh_3x = thresh_2x + diff,
-                thresh_4x = thresh_3x + diff) %>% 
-  filter(t>=as.Date("2019-01-01") & t<=as.Date("2019-12-31")) # Select the time period to display.
-
-# Plotting code directly from heatwaveR vignette.
-# Set line colours
-lineColCat <- c(
-  "Temperature" = "black",
-  "Climatology" = "gray20",
-  "Threshold" = "darkgreen",
-  "2x Threshold" = "darkgreen",
-  "3x Threshold" = "darkgreen",
-  "4x Threshold" = "darkgreen"
-)
-
-# Set category fill colours
-fillColCat <- c(
-  "Moderate" = "#ffc866",
-  "Strong" = "#ff6900",
-  "Severe" = "#9e0000",
-  "Extreme" = "#2d0000"
-)
-
-ggplot(data = clim_cat, 
-       aes(x = t, y = temp)) +
-  geom_flame(aes(y2 = thresh, fill = "Moderate")) +
-  geom_flame(aes(y2 = thresh_2x, fill = "Strong")) +
-  geom_flame(aes(y2 = thresh_3x, fill = "Severe")) +
-  geom_flame(aes(y2 = thresh_4x, fill = "Extreme")) +
-  geom_line(aes(y = thresh_2x, col = "2x Threshold"),
-            size = 0.7, linetype = "dashed") +
-  geom_line(aes(y = thresh_3x, col = "3x Threshold"), 
-            size = 0.7, linetype = "dotdash") +
-  geom_line(aes(y = thresh_4x, col = "4x Threshold"), 
-            size = 0.7, linetype = "dotted") +
-  geom_line(aes(y = seas,col = "Climatology"), size = 0.7) +
-  geom_line(aes(y = thresh,col = "Threshold"), size = 0.7) +
-  geom_line(aes(y = temp,col = "Temperature"), size = 0.6) +
-  scale_colour_manual(name = NULL, 
-                      values = lineColCat,
-                      breaks = c("Temperature", 
-                                 "Climatology",
-                                 "Threshold",
-                                 "2x Threshold", 
-                                 "3x Threshold",
-                                 "4x Threshold")) +
-  scale_fill_manual(name = NULL, 
-                    values = fillColCat, 
-                    guide = FALSE) +
-  scale_x_date(date_labels = "%b %Y") +
-  guides(colour = guide_legend(
-    override.aes = list(linetype = c("solid", 
-                                     "solid", 
-                                     "solid",
-                                     "dashed", 
-                                     "dotdash", 
-                                     "dotted"),
-                        size = c(0.6, 0.7, 0.7,0.7, 0.7, 0.7)))) +
-  labs(y = "Temperature [°C]", x = NULL) +
-  theme(legend.position="top")
-```
-
-
-**Oracle database queries** 
-Oracle database queries Some data users prefer the flexibility and transparency of querying raw gridded data directly from the Oracle server. This is particularly useful for larger queries (e.g., millions of records) or for exploring data across a suite of different spatial extents (e.g., custom depth ranges, shapefiles, etc.). To query directly from the database, users will need an AKFIN database account, which can be provided by contacting the authors of this document. As we note in the web services section, such custom queries can also be automated by working with Alaska Fisheries Science Center (AFSC) and AKFIN staff.
-
-The gridded SST data (Fig. BB) are stored within the AFSC schema on the AKFIN Oracle database and the primary key linking the lookup tables (Table 2) with the gridded data is the ID field. In the lookup table, it is simply “ID” and in the CRW SST data table it is “CRW_ID.” Spatial columns in a query result may reveal ‘NA’ because the particular latitude - longitude coordinates shown do not fall within any spatial strata represented by those columns. The following example query demonstrates the primary key relationship between the data and lookup tables. In this case, we query SST (“TEMP”) data that fall within a crab management area and we add a field for “Year”.
-
+**SQL Code Input - 1**
 SELECT read_date, temp, TO_CHAR(read_date,'YYYY') as Year, crab 
 FROM   afsc.erddap_crw_sst a 
 INNER JOIN (SELECT* FROM afsc.erddap_crw_sst_spatial_lookup WHERE crab <> 'NA') b 
@@ -365,8 +274,6 @@ httr::content(
 ```
 
 
- 
-
 **R Code Input - 6**  
 ```{r}
 #You can specify a number of days prior to any date using a "days_back" parameter specification. For example the three days before Y2K. 
@@ -377,8 +284,6 @@ httr::content(
   bind_rows 
 ```
 
-
-    
 
 **R Code Input - 7**  
 ```{r}
@@ -410,7 +315,6 @@ lkp <- readRDS("Data/crwsst_spatial_lookup_table.RDS")
 unique(lkp$Ecosystem_sub)
 ```
 
-  
 
 **R Code Input - 10**  
 ```{r}
@@ -477,140 +381,9 @@ updateddata <- httr::content(
 ```
 
 
-**R Code Input - 14**  
-```{r}
-#Step 2: Calculate marine heatwave indices using the mhw package.
-library(heatwaveR)
-mhw <- detect_event(
-  ts2clm(updateddata %>% 
-           rename(t=date,
-                  temp=meansst) %>% 
-           arrange(t),
-         climatologyPeriod = c("1985-01-01", "2014-12-31"))) #Specify baseline period
-
-```
-
-
-
-**R Code Input - 15**   
-```{r}
-#Create "flame" plots.
-# Plotting code directly from heatwaveR vignette.
-
-mhw_clim <- mhw$climatology %>% 
-  filter(t>=as.Date("2018-12-01"))  #Extract the MHW data
-
-ggplot(data = mhw_clim, 
-       aes(x = t)) +
-  geom_flame(aes(y = temp, y2 = thresh, fill = "all"),
-             show.legend = T) +
-  geom_flame(data = mhw_clim, 
-             aes(y = temp,y2 = thresh, fill = "top"),  
-             show.legend = T) +
-  geom_line(aes(y = temp, colour = "temp")) +
-  geom_line(aes(y = thresh, colour = "thresh"), size = 1.0) +
-  geom_line(aes(y = seas, colour = "seas"), size = 1.2) +
-  scale_colour_manual(name = "Line Colour",
-                      values = c("temp" = "black", 
-                                 "thresh" =  "forestgreen", 
-                                 "seas" = "grey80")) +
-  scale_fill_manual(name = "Event Colour", 
-                    values = c("all" = "salmon", 
-                               "top" = "red")) +
-  scale_x_date(date_labels = "%b %Y") +
-  guides(colour = guide_legend(
-    override.aes = list(fill = NA))) +
-  labs(y = expression(paste("Temperature [", degree, "C]")), x = NULL) + 
-  theme(legend.position="top")
-```
-
-
-**R Code Input - 16**  
-```{r}
-# A better illustration of heatwave categories from the Northern Bering Sea
-
-#  Here we'll use an example where we do not save the SST data as a separate object first, simply embedding it into the ts2clm() function.
-
-#This is figure 5 in the main body.
-
-clim_cat <- (detect_event(
-  ts2clm(
-  httr::content(
-    httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Northern%20Bering%20Sea&start_date=19850101&end_date=20211231'),
-    type = "application/json") %>% 
-    bind_rows %>% 
-    mutate(date=as_date(READ_DATE)) %>% 
-    data.frame %>% 
-    dplyr::select(t=date,temp=MEANSST) %>% 
-    arrange(t), 
-  climatologyPeriod = c("1985-01-01", "2014-12-31"))))$climatology %>% #Specify the baseline period.
-  dplyr::mutate(diff = thresh - seas,
-                thresh_2x = thresh + diff,
-                thresh_3x = thresh_2x + diff,
-                thresh_4x = thresh_3x + diff) %>% 
-  filter(t>=as.Date("2019-01-01") & t<=as.Date("2019-12-31")) # Select the time period to display.
-
-# Plotting code directly from heatwaveR vignette.
-# Set line colours
-lineColCat <- c(
-  "Temperature" = "black",
-  "Climatology" = "gray20",
-  "Threshold" = "darkgreen",
-  "2x Threshold" = "darkgreen",
-  "3x Threshold" = "darkgreen",
-  "4x Threshold" = "darkgreen"
-)
-
-# Set category fill colours
-fillColCat <- c(
-  "Moderate" = "#ffc866",
-  "Strong" = "#ff6900",
-  "Severe" = "#9e0000",
-  "Extreme" = "#2d0000"
-)
-
-ggplot(data = clim_cat, 
-       aes(x = t, y = temp)) +
-  geom_flame(aes(y2 = thresh, fill = "Moderate")) +
-  geom_flame(aes(y2 = thresh_2x, fill = "Strong")) +
-  geom_flame(aes(y2 = thresh_3x, fill = "Severe")) +
-  geom_flame(aes(y2 = thresh_4x, fill = "Extreme")) +
-  geom_line(aes(y = thresh_2x, col = "2x Threshold"),
-            size = 0.7, linetype = "dashed") +
-  geom_line(aes(y = thresh_3x, col = "3x Threshold"), 
-            size = 0.7, linetype = "dotdash") +
-  geom_line(aes(y = thresh_4x, col = "4x Threshold"), 
-            size = 0.7, linetype = "dotted") +
-  geom_line(aes(y = seas,col = "Climatology"), size = 0.7) +
-  geom_line(aes(y = thresh,col = "Threshold"), size = 0.7) +
-  geom_line(aes(y = temp,col = "Temperature"), size = 0.6) +
-  scale_colour_manual(name = NULL, 
-                      values = lineColCat,
-                      breaks = c("Temperature", 
-                                 "Climatology",
-                                 "Threshold",
-                                 "2x Threshold", 
-                                 "3x Threshold",
-                                 "4x Threshold")) +
-  scale_fill_manual(name = NULL, 
-                    values = fillColCat, 
-                    guide = FALSE) +
-  scale_x_date(date_labels = "%b %Y") +
-  guides(colour = guide_legend(
-    override.aes = list(linetype = c("solid", 
-                                     "solid", 
-                                     "solid",
-                                     "dashed", 
-                                     "dotdash", 
-                                     "dotted"),
-                        size = c(0.6, 0.7, 0.7,0.7, 0.7, 0.7)))) +
-  labs(y = "Temperature [°C]", x = NULL) +
-  theme(legend.position="top")
-```
-
 **Oracle database queries**
 
-**R Code Input - 17**
+**R Code Input - 14**
 
 ```{r}
 #Connect to the AKFIN database with R
@@ -676,6 +449,7 @@ dbFetch(dbSendQuery(con,
   geom_smooth()
 ```
 
+
 **R / SQL Code Input - 2** 
 ```{r Query_OI_SST_Heatmap}
 #Query OISST temperature for the Eastern Gulf of Alaska on 4th of July 2021 and plot heatmap
@@ -698,6 +472,12 @@ ggplot()+geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
     scale_fill_viridis_c()+
     theme_bw()
 ```
+
+I don't actually have access to council.comprehensive_obs_v though I can access
+council.comprehensive_obs
+
+Probably sufficient below to just make a plot of shark v. SST instead of the whole prediction stuff.
+But I'm happy with whatever really!
 
 **R / SQL Code Input - 3** 
 ```{r Query_MUR_Obs_Data}
@@ -722,4 +502,9 @@ dummy<-data.frame(SST=seq(min(mursst$SST), max(mursst$SST), len=500))
 dummy$shark<-predict(model, dummy, type="response")
 plot(shark ~ SST, data=mursst, col="steelblue")
 lines(shark ~ SST, data=dummy, lwd=2)
+
+mursst %>% 
+  mutate(shark=ifelse(is.na(OBS_SPECIE_CODE),0,1)) %>% 
+  ggplot(aes(shark,SST)) + 
+  geom_point()
 ```
