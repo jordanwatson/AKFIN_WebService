@@ -64,6 +64,7 @@ Three daily satellite SST products were accessed via NOAA ERDDAP servers [@Simon
 
 The SST data sets used are from NOAA Coral Reef Watch (CRW), NASA Jet Propulsion Laboratory Multi-Scale Ultra-High Resoultion (MUR), and NOAA National Center for Environmental Information Optimal Interpolation (OI) (Table 1). ~~The National Environmental Satellite Data and Information Service recommends the CRW SST product and this is the primary dataset used in this study.~~ The data sets vary in spatial resolution and time-span. MUR SST has the finest spatial resolution while OI SST is the most course. Meanwhile OI SST includes the longest time series while MUR has the briefest. 
 
+
 (Insert Table 1 here)
 Table 1. Description of the three satellite data sets and their data products in the AKFIN database backend.
 
@@ -178,11 +179,11 @@ We provide further example code (Supplement). This section’s purpose is to ori
 
 
 **Matching SST data with fishery-dependent data** 
-The above sections demonstrate access to gridded or raw SST data that are updated daily within AKFIN. In addition to raw SST data access, the daily SST data are also integrated within the AKFIN back-end to observer and fish  ticket data. For both of these fishery-dependent data sets, the MUR SST data have been used, and users with access to these confidential data sets through AKFIN can find an SST field in the comprehensive_ft and comprehensive_haul (check table names) tables.
+The above sections demonstrate access to gridded or raw SST data that are updated daily within AKFIN. In addition to raw SST data access, the daily SST data are also integrated within the AKFIN back-end to observer, fish ticket, and vessel monitoring systems (VMS) data. The observer and fish ticket data use the MUR SST data while the VMS uses CRW SST. Users with access to these confidential data sets can find AVG_SST_CELSIUS and STDDEV_SST_CELSIUS fields in "comprehensive" data tables located in the COUNCIL schema. The comprehensives (e.g. comprehensive_obs for observer data) were developed connect numerous fields relevant to fisheries data in one table. VMS data linked to SST can be accessed through the comprehensive_vms_v view in the AKFIN_MARTS schema. 
 
 Observer data include latitudes and longitudes of gear deployment and retrieval locations, which are matched with the nearest gridded SST data for a given date. The temperature data are then averaged across the retrieval and deploy points to yield a single SST datum for each observed fishing event.
 
-Fish ticket spatial data are recorded at the scale of ADF&G statistical areas (typically 0.5 degree latitude x 1.0 degree longitude), so gridded SST data cannot be matched as directly. Instead, daily SST data for all gridded locations within each statistical area (N=1758) are averaged, to yield a single daily datum for each of the statistical areas. These daily average data are then matched with the reported statistical areas on fish tickets based on the date that fishing was reported to have begun within a particular statistical area.
+Fish ticket spatial data are recorded at the scale of ADF&G statistical areas (typically 0.5 degree latitude x 1.0 degree longitude), so gridded SST data cannot be matched as directly. Instead, daily SST data for all gridded locations within each statistical area (N=1758) are averaged, to yield a single daily datum for each of the statistical areas. These daily average data are then matched with the reported statistical areas on fish tickets based on the date that fishing was reported to have begun within a particular statistical area. VMS data are simply matched with the SST of the position and date of the VMS transmission.
   
 
 # Discussion   
