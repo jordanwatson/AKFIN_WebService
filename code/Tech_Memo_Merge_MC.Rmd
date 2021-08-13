@@ -475,11 +475,7 @@ ggplot()+geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
     theme_bw()
 ```
 
-I don't actually have access to council.comprehensive_obs_v though I can access
-council.comprehensive_obs
 
-Probably sufficient below to just make a histogram of SST where sharks are caught? mursst %>% ggplot(aes(SST)) + geom_histogram()
-But I'm happy with whatever really - I'll leave that to you!
 
 **R / SQL Code Input - 3** 
 ```{r Query_MUR_Obs_Data}
@@ -491,18 +487,13 @@ mursst<-dbFetch(dbSendQuery(con,
                               "select distinct(a.haul_join), a.avg_sst_celsius as SST, b.obs_specie_code
                                 from council.comprehensive_obs a
                                 left join (select obs_specie_code, haul_join
-                                from council.comprehensive_obs 
+                                from council.comprehensive_obs
                                 where obs_specie_code=67) b
                                 on a.haul_join=b.haul_join
                                 where a.reporting_area_code>= 620 and
                                 a.avg_sst_celsius>0 and
                                 a.akr_gear_code = 'PTR'")))
 
-mursst<-mursst %>% mutate(shark=ifelse(is.na(OBS_SPECIE_CODE),0,1))
-model<-glm(shark~SST, data=mursst, family="binomial")
-summary(model)  
-dummy<-data.frame(SST=seq(min(mursst$SST), max(mursst$SST), len=500))
-dummy$shark<-predict(model, dummy, type="response")
-plot(shark ~ SST, data=mursst, col="steelblue")
-lines(shark ~ SST, data=dummy, lwd=2)
+ggplot() + geom_histogram(data=mursst, aes(SST))+
+  geom_histogram(data=filter(mursst, OBS_SPECIE_CODE==67), aes(SST), fill="red")
 ```
