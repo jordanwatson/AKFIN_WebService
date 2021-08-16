@@ -202,9 +202,9 @@ The following section provides examples of R and SQL code inputs and outputs tha
 **R Code Chunk - 1.** Web service query of sea surface temperature for NMFS Areas 640 for "start_date=19850101" through "end_date=19850105". 
 ```{r, message=FALSE}
 #Load packages
-library(httr) # For pulling data via a URL
-library(tidyverse) # Data manipulation
-library(lubridate) # Date formatting
+#library(httr) # For pulling data via a URL
+#library(tidyverse) # Data manipulation
+#library(lubridate) # Date formatting
 
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=19850105'), 
@@ -342,7 +342,7 @@ httr::content(
 
 
 **Oracle database queries**   
-The following section includes a combination of standalone SQL queries and SQL queries embedded within R fuction calls. Standalone SQL queries are often executed from a software application like SQL Developer. Alternatively, as we demonstrate below, SQL can be executed from RMarkdown by specifying that a chunk uses SQL instead of R. First, an R connection with the Oracle database must be established as in R Code Chunk - 14 below. They can also be executed from within R functions to create a mixed R/SQL workflow.
+The following section includes a combination of standalone SQL queries and SQL queries embedded within R function calls. Standalone SQL queries are often executed from a software application like SQL Developer. Alternatively, as we demonstrate below, SQL can be executed from RMarkdown by specifying that a chunk uses SQL instead of R. First, an R connection with the Oracle database must be established as in R Code Chunk - 14 below. They can also be executed from within R functions to create a mixed R/SQL workflow.
 
 **R Code Chunk - 14.** Demonstration of connection to Oracle via R. For confidentiality, we have omitted our login credentials but users would substitute the UID and PWD parameter values here for your own AFKIN database credentials. In this case, the database connection is saved as the object "con" for later use. For assistance in configuring your computer for an Oracle connection through R, contact your IT help desk. The authors can also assist with technical questions regarding configuration.  
 ```{r}
@@ -422,12 +422,11 @@ oisst<-dbFetch(dbSendQuery(con,
                             ON a.oi_id = b.id
                             where read_date='04-JUL-09'")))
 #import basemap polygon
-BASE<-tidy(readOGR(dsn="Data",
-                        layer="AKbasemap",
-                        verbose=FALSE)) # Load basemap
+require(sf) #sf has a lot of improved functionality versus sp
+BASE<-st_read(dsn="Data",layer="AKbasemap") # Load basemap
 
 ggplot()+geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
-    geom_polygon(data=BASE,aes(x=long,y=lat,group=factor(group)),fill="gray40")+
+    geom_sf(data=BASE, fill="gray60")+
     xlim(c(-145,-130))+ylim(c(53,60))+
     scale_fill_viridis_c()+
     theme_bw()
