@@ -41,13 +41,22 @@ r.ak6<-st_as_sf(r.ak5)
 #this didn't work. I can do a good enough map with the line
 r.ak7<-st_polygonize(r.ak6)
 
+##bring in lookup table
+lkp<-dbFetch(dbSendQuery(con, "select* from afsc.erddap_crw_sst_spatial_lookup"))
+lkp2<-lkp%>%filter(ECOSYSTEM_SUB!="NA")
+lkp3<-lkp2%>%filter(ECOSYSTEM != "Aleutian Islands")
+lkp3<-lkp3%>%filter(DEPTH<=-10 & DEPTH>=-200)
+lkp3<-st_as_sf(lkp3, coords=c("LONGITUDE", "LATITUDE"), 
+               crs = 4326, agr = "constant")
+lkp4<-lkp2%>%filter(ECOSYSTEM == "Aleutian Islands")
+lkp4<-st_as_sf(lkp4, coords=c("LONGITUDE", "LATITUDE"), 
+               crs = 4326, agr = "constant")
 #
 ggplot()+
  geom_sf(data=BASE%>% st_shift_longitude(), fill="gray60")+
  geom_sf(data=ESR%>% st_shift_longitude(), fill=NA, mapping=aes())+
-  geom_sf(r.ak6%>%st_shift_longitude(), mapping=aes(), fill="black", size=1, lty=1)+
+  #geom_sf(data=r.ak6%>%st_shift_longitude())+
+  geom_sf(data=lkp3%>%st_shift_longitude(), size=0.001)+
+  geom_sf(data=lkp4%>%st_shift_longitude(), size=0.001)+
   coord_sf(xlim=c(xmin, xmax), ylim=c(ymin,ymax))+
   theme_void()
-
- 
-
