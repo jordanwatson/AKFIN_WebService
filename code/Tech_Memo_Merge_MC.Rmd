@@ -438,8 +438,6 @@ require(sf)
 require(rnaturalearth)
 require(rnaturalearthdata)
 
-#BASE<-st_read(dsn="Data",layer="AKbasemap") 
-
 ggplot()+
   geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
   geom_sf(data=ne_countries(scale = "medium", returnclass = "sf"), fill="gray60") + 
