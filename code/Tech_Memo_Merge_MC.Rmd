@@ -354,6 +354,8 @@ httr::content(
 **Oracle database queries**   
 The following section includes a combination of standalone SQL queries and SQL queries embedded within R function calls. Standalone SQL queries are often executed from a software application like SQL Developer. Alternatively, as we demonstrate below, SQL can be executed from RMarkdown by specifying that a chunk uses SQL instead of R. First, an R connection with the Oracle database must be established as in R Code Chunk - 14 below. They can also be executed from within R functions to create a mixed R/SQL workflow.  
 
+A note of caution that when querying data from the database, these are large gridded data sets so beware that queries may be large and take a while to execute. You may want to execute a count query  prior to pulling the data. 
+
 **R Code Chunk - 14.** Demonstration of connection to Oracle via R. For confidentiality, we have omitted our login credentials but users would substitute the UID and PWD parameter values here for your own AFKIN database credentials. In this case, the database connection is saved as the object "con" for later use. For assistance in configuring your computer for an Oracle connection through R, contact your IT help desk. The authors can also assist with technical questions regarding configuration. 
 
 ```{r}
