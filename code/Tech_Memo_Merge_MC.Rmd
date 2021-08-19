@@ -114,7 +114,7 @@ newdata <- test.df %>%
   bind_rows(test.df %>% 
               filter(!is.na(`ADFG Stat Area`)) %>% 
               mutate(stratum="ADF&G Stat Areas")) %>% 
-  bind_rows(readOGR(dsn="Data",layer="BristolBay",verbose=FALSE) %>%  # Read in and mergee the crab shapefiles
+  bind_rows(readOGR(dsn="Data",layer="BristolBay",verbose=FALSE) %>%  # Read in and merge crab shapefiles
               fortify() %>% 
               mutate(long2=ifelse(long<0,long+360, long),
                      group="bb") %>% # To avoid duplicating group factors from the other shapefiles, create a distinct grouping level for crab. bb is Bristol Bay
@@ -199,7 +199,8 @@ Bob Nigh and Rob Ames were instrumental in setting up and configuring database q
 # Supplement  
 The following section provides examples of R and SQL code inputs and outputs that demonstrate the AKFIN SST web services and AKFIN backend SST data connection via Oracle SQL.
 
-**R Code Chunk - 1.** Web service query of sea surface temperature for NMFS Areas 640 for "start_date=19850101" through "end_date=19850105". 
+**R Code Chunk - 1.** Web service query of sea surface temperature for NMFS Areas 640 for "start_date=19850101" through "end_date=19850105".  
+
 ```{r, message=FALSE}
 #Load packages
 #library(httr) # For pulling data via a URL
@@ -213,7 +214,8 @@ httr::content(
 ```
 
 
-**R Code Chunk - 2.** Web service query of the full time series for NMFS area 640 ("nmfs_area=640") from 1985-01-01 to present. To obtain a time series that includes the most recent records, specify an *end_date* that is greater than the current date. Here we us an arbitary future date of "end_date=20280101". Because this query extracts more than 13,000 records, we demonstrate by saving to an object and then viewing the structure of that object. However as demonstrated in subsequent chunks, it is unnecessary to save the query to an object.
+**R Code Chunk - 2.** Web service query of the full time series for NMFS area 640 ("nmfs_area=640") from 1985-01-01 to present. To obtain a time series that includes the most recent records, specify an *end_date* that is greater than the current date. Here we us an arbitary future date of "end_date=20280101". Because this query extracts more than 13,000 records, we demonstrate by saving to an object and then viewing the structure of that object. However as demonstrated in subsequent chunks, it is unnecessary to save the query to an object.  
+
 ```{r}
 data <- httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19850101&end_date=20280101'), 
@@ -224,7 +226,8 @@ str(data)
 ```
 
 
-**R Code Chunk - 4.** Web service query of SST in NMFS area 640 with custom start and end dates. This chunk also demonstrates a piped workflow to generate a figure without saving any intermediate objects.
+**R Code Chunk - 4.** Web service query of SST in NMFS area 640 with custom start and end dates. This chunk also demonstrates a piped workflow to generate a figure without saving any intermediate objects.  
+
 ```{r, message=FALSE}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&start_date=19870101&end_date=19880101'), 
@@ -238,6 +241,7 @@ httr::content(
 
 
 **R Code Chunk - 5.** The *read_date* parameter will access a single date record. Note that due to time zones and the web service configuration, the specified date is one day later than the extracted date. 
+
 ```{r}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101'), 
@@ -246,7 +250,8 @@ httr::content(
 ```
 
 
-**R Code Chunk - 6.** Web service query demonstrating use of the *days_back* command. In this case, the most recent three days are queried by specifying "days_back=2" which pulls two days back from the most recent record. 
+**R Code Chunk - 6.** Web service query demonstrating use of the *days_back* command. In this case, the most recent three days are queried by specifying "days_back=2" which pulls two days back from the most recent record.  
+
 ```{r}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&days_back=2'), 
@@ -255,7 +260,8 @@ httr::content(
 ```
   
   
-**R Code Chunk - 7.** A date can be used in conjunction with the *days_back* parameter. In this case, the three days prior to the start of 2000-01-01 are queried by specifying this date and "days_back=2".
+**R Code Chunk - 7.** A date can be used in conjunction with the *days_back* parameter. In this case, the three days prior to the start of 2000-01-01 are queried by specifying this date and "days_back=2".  
+
 ```{r}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640&read_date=20000101&days_back=2'), 
@@ -264,7 +270,8 @@ httr::content(
 ```
 
 
-**R Code Chunk - 8.** Web service query of multiple different NMFS areas (640, 650). Queried areas are separated by a comma with no spaces.
+**R Code Chunk - 8.** Web service query of multiple different NMFS areas (640, 650). Queried areas are separated by a comma with no spaces.  
+
 ```{r}
 httr::content(
   httr::GET("https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650"), 
@@ -274,6 +281,7 @@ httr::content(
 
 
 **R Code Chunk - 9** Web service query and subsequent commands, demonstrating a workflow that avoids saving intermediate objects to produce a figure. In this case, SST for NMFS Areas 640 and 650, averaged for June, July, and August. 
+
 ```{r, message=FALSE}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), 
@@ -291,7 +299,8 @@ httr::content(
 ```
 
 
-**R Code Chunk - 10.** Query the spatial look-up table for the CRW SST data set to view the names of the Ecosystem_sub areas from the Ecosystem Status Reports. This query simply pulls from the Github repo for this project. A later code chunk will query a look-up table from the AKFIN database using SQL.
+**R Code Chunk - 10.** Query the spatial look-up table for the CRW SST data set to view the names of the Ecosystem_sub areas from the Ecosystem Status Reports. This query simply pulls from the Github repo for this project. A later code chunk will query a look-up table from the AKFIN database using SQL.  
+
 ```{r}
 lkp <- readRDS("Data/crwsst_spatial_lookup_table.RDS") 
 
@@ -299,7 +308,8 @@ unique(lkp$Ecosystem_sub)
 ```
 
 
-**R Code Chunk - 11.** Web service query for the most recent record in the Ecosystem_sub area "Southeastern Bering Sea". Note that spaces are filled with "%20". Names for each Ecosystem_sub area are presented in the previous query.
+**R Code Chunk - 11.** Web service query for the most recent record in the Ecosystem_sub area "Southeastern Bering Sea". Note that spaces are filled with "%20". Names for each Ecosystem_sub area are presented in the previous query.  
+
 ```{r}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), 
@@ -308,7 +318,8 @@ httr::content(
 ```
 
 
-**R Code Chunk - 12.** Web service query to plot the full time series for the eastern Gulf of Alaska and eastern Aleutian Islands from 1985 - present. Note the comma to separate regions and the "%20" to fill spaces in the character strings.
+**R Code Chunk - 12.** Web service query to plot the full time series for the eastern Gulf of Alaska and eastern Aleutian Islands from 1985 - present. Note the comma to separate regions and the "%20" to fill spaces in the character strings.  
+
 ```{r, message=FALSE}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Eastern%20Gulf%20of%20Alaska,Eastern%20Aleutians&start_date=19850101&end_date=20220101'), 
@@ -321,10 +332,9 @@ httr::content(
 ```
 
 
-**R Code Chunk - 13.**  Web service query to plot the annual averages for NMFS areas 640 and 650. Note that annual averaging is performed downstream of the web service query.
-```{r, message=FALSE}
-#"Annual average SST for NMFS areas 640 and 650."
+**R Code Chunk - 13.**  Web service query to plot the annual averages for NMFS areas 640 and 650. Note that annual averaging is performed downstream of the web service query.  
 
+```{r, message=FALSE}
 httr::content(
   httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/nmfs_area_crw_avg_sst?nmfs_area=640,650&start_date=19850101&end_date=20220101'), 
   type = "application/json") %>% 
@@ -342,9 +352,10 @@ httr::content(
 
 
 **Oracle database queries**   
-The following section includes a combination of standalone SQL queries and SQL queries embedded within R function calls. Standalone SQL queries are often executed from a software application like SQL Developer. Alternatively, as we demonstrate below, SQL can be executed from RMarkdown by specifying that a chunk uses SQL instead of R. First, an R connection with the Oracle database must be established as in R Code Chunk - 14 below. They can also be executed from within R functions to create a mixed R/SQL workflow.
+The following section includes a combination of standalone SQL queries and SQL queries embedded within R function calls. Standalone SQL queries are often executed from a software application like SQL Developer. Alternatively, as we demonstrate below, SQL can be executed from RMarkdown by specifying that a chunk uses SQL instead of R. First, an R connection with the Oracle database must be established as in R Code Chunk - 14 below. They can also be executed from within R functions to create a mixed R/SQL workflow.  
 
-**R Code Chunk - 14.** Demonstration of connection to Oracle via R. For confidentiality, we have omitted our login credentials but users would substitute the UID and PWD parameter values here for your own AFKIN database credentials. In this case, the database connection is saved as the object "con" for later use. For assistance in configuring your computer for an Oracle connection through R, contact your IT help desk. The authors can also assist with technical questions regarding configuration.  
+**R Code Chunk - 14.** Demonstration of connection to Oracle via R. For confidentiality, we have omitted our login credentials but users would substitute the UID and PWD parameter values here for your own AFKIN database credentials. In this case, the database connection is saved as the object "con" for later use. For assistance in configuring your computer for an Oracle connection through R, contact your IT help desk. The authors can also assist with technical questions regarding configuration. 
+
 ```{r}
 library(odbc) # For connecting to oracle database
 
@@ -358,23 +369,24 @@ con <- dbConnect(odbc::odbc(), "akfin", UID=params$uid, PWD=params$pass)
 ```
 
 
-**SQL Code Chunk - 1.** Using the previously established R connection with the database ("con"), a SQL code chunk can be executed by specifying *```{sql, connection=con}* instead of the typical *```{r}*. Alternatively, this SQL query could be executed normally from SQL Developer or a similar editor. Here we query the first five rows of the CRW SST data set. We limit the query here as this is the full gridded data set with more than one billion records. Note that this data set displays no spatial information as currently configured. 
-```{sql, connection=con}
--- CRW SST from the AKFIN Oracle database
+**SQL Code Chunk - 1.** Using the previously established R connection with the database ("con"), a SQL code chunk can be executed in Markdown by specifying *```{sql, connection=con}* instead of the typical *```{r}*. Alternatively, this SQL query could be executed normally from SQL Developer or a similar editor. Here we query the first five rows of the CRW SST data set. We limit the query here as this is the full gridded data set with more than one billion records. Note that this data set displays no spatial information as currently configured.  
 
+```{sql, connection=con}
 select * from  afsc.erddap_crw_sst 
 where rownum<=5
 ```
 
 
-**SQL Code Chunk - 2.** Oracle query of the first five rows of the CRW SST spatial look-up table. This table contains the spatial associations that will provide valuable context to the previous query. 
+**SQL Code Chunk - 2.** Oracle query of the first five rows of the CRW SST spatial look-up table. This table contains the spatial associations that will provide valuable context to the previous query.  
+
 ```{sql, connection=con}
 select * from  afsc.erddap_crw_sst_spatial_lookup 
 where rownum<=5
 ```
 
 
-**SQL Code Chunk - 3.** Oracle query of the CRW SST data where the crab management areas are not null. To join the SST data with the look-up table that contains the crab areas, the query joins the CRW_ID field from the gridded SST data set with the ID field from the look-up table. Again, the view here is limited to the first five rows. The "temp" variable is the SST field.
+**SQL Code Chunk - 3.** Oracle query of the CRW SST data where the crab management areas are not null. To join the SST data with the look-up table that contains the crab areas, the query joins the CRW_ID field from the gridded SST data set with the ID field from the look-up table. Again, the view here is limited to the first five rows. The "temp" variable is the SST field.  
+
 ```{sql, connection=con}
 select read_date,
         temp,
@@ -388,10 +400,9 @@ where rownum<=5
 ```
 
 
-**R / SQL Code Chunk - 1.** SQL queries can be executed from within an R function using a traditional RMarkdown chunk or within a traditional R script. Here the SQL query is embedded within the requisite *dbFetch(dbSendQuery())* functions to execute the query and plot a time series where the crab management field is equal to "bb" (Bristol Bay).
-```{r Query_CRW_Crab_plot}
-#Plotted query of Bristol Bay crab management area SST data averaged daily and plotted with default smoothing.
+**R / SQL Code Chunk - 1.** SQL queries can be executed from within an R function using a traditional RMarkdown chunk or within a traditional R script. Here the SQL query is embedded within the requisite *dbFetch(dbSendQuery())* functions to execute the query and plot a time series where the crab management field is equal to "bb" (Bristol Bay).  
 
+```{r Query_CRW_Crab_plot}
 dbFetch(dbSendQuery(con,
                     "select read_date,
                                    round(avg(temp),2) as sst,
@@ -410,9 +421,9 @@ dbFetch(dbSendQuery(con,
 ```
 
 
-**R / SQL Code Chunk - 2.** SQL query of the OI_SST data set for the Eastern Gulf of Alaska for 2009-04-04. In this example, the data are saved as an object and plotted on a map of Alaska. 
+**R / SQL Code Chunk - 2.** SQL query of the OI_SST data set for the Eastern Gulf of Alaska for 2009-04-04. In this example, the data are saved as an object and plotted on a map of Alaska.  
+
 ```{r Query_OI_SST_Heatmap}
-#Query OISST temperature for the Eastern Gulf of Alaska on 4th of July 2021 and plot heatmap
 oisst<-dbFetch(dbSendQuery(con,
                     paste0("select read_date, temp, ecosystem_sub, longitude, latitude
                             from afsc.erddap_oi_sst a                            
@@ -421,23 +432,30 @@ oisst<-dbFetch(dbSendQuery(con,
                                       where ecosystem_sub = 'Eastern Gulf of Alaska') b
                             ON a.oi_id = b.id
                             where read_date='04-JUL-09'")))
-#import basemap polygon
-require(sf) #sf has a lot of improved functionality versus sp
-BASE<-st_read(dsn="Data",layer="AKbasemap") # Load basemap
 
-ggplot()+geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
-    geom_sf(data=BASE, fill="gray60")+
-    xlim(c(-145,-130))+ylim(c(53,60))+
-    scale_fill_viridis_c()+
-    theme_bw()
+# Packages for mapping
+require(sf) 
+require(rnaturalearth)
+require(rnaturalearthdata)
+
+#BASE<-st_read(dsn="Data",layer="AKbasemap") 
+
+ggplot()+
+  geom_tile(data=oisst, aes(LONGITUDE, LATITUDE, fill=TEMP))+
+  geom_sf(data=ne_countries(scale = "medium", returnclass = "sf"), fill="gray60") + 
+  scale_fill_viridis_c() +
+  theme_bw() +
+  xlim(c(-145,-130)) +
+  ylim(c(53,60))
 ```
 
 
 **R / SQL Code Chunk - 3.** SQL query of MUR SST associated with observer-reported catches of salmon sharks in the pelagic trawl fishery operating in NMFS areas >= 620. The histogram illustrates the temperatures at which salmon sharks were caught by this fleet. 
+
 ```{r Query_MUR_Obs_Data}
 dbFetch(dbSendQuery(con,
-                            paste0(
-                              "select distinct(a.haul_join), a.avg_sst_celsius as SST, b.obs_specie_code
+                    paste0(
+                      "select distinct(a.haul_join), a.avg_sst_celsius as SST, b.obs_specie_code
                                 from council.comprehensive_obs a
                                 left join (select obs_specie_code, haul_join
                                 from council.comprehensive_obs
@@ -449,5 +467,4 @@ dbFetch(dbSendQuery(con,
   filter(OBS_SPECIE_CODE==67) %>% 
   ggplot() + 
   geom_histogram(aes(SST))
-
 ```
