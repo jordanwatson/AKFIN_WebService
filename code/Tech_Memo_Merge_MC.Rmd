@@ -16,8 +16,10 @@ knitr::opts_chunk$set(warning = FALSE, error = FALSE, message = FALSE, fig.width
 library(tidyverse)
 library(DBI) #  For database query
 library(odbc)
-library(sp) # For maps
-library(rgdal) # For maps
+library(sp)
+library(rgdal) 
+library(sf)
+library(httr)
 library(broom)
 library(heatwaveR)
 library(lubridate)
@@ -307,8 +309,45 @@ lkp <- readRDS("Data/crwsst_spatial_lookup_table.RDS")
 unique(lkp$Ecosystem_sub)
 ```
 
+**R Code Chunk - 11.** Plot the ESR regions overlaid with the gridded CRW cells in each region with the depth filter applied to the Bering Sea and Gulf of Alaska regions. The number of cells in each region are Western Aleutians (19538), Central Aleutians (17506), Eastern Aleutians (28031), Northern Bering Sea (19495), Southeastern Bering Sea (24934), Western Gulf of Alaska (8780), and Eastern Gulf of Alaska (3343). 
 
-**R Code Chunk - 11.** Web service query for the most recent record in the Ecosystem_sub area "Southeastern Bering Sea". Note that spaces are filled with "%20". Names for each Ecosystem_sub area are presented in the previous query.  
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+#Define extent
+xmin <- 165
+xmax <- 230
+ymin <- 48
+ymax <- 71
+
+#import basemap polygon
+BASE<-st_read(dsn="Data",layer="AKbasemap") # Load 
+
+#load regions
+ESR <- st_read("Data/Alaska_Marine_Management_Areas.gdb") %>% 
+  filter(Area_Type=="Ecosystem Subarea")
+
+#import lookup table
+lkp<-readRDS("Data/crwsst_spatial_lookup_table.RDS")
+lkp2<-lkp%>%filter(ECOSYSTEM_SUB!="NA") #filter out cells outside ESR regions
+#Separate GOA and BS points from AI, as depth filter is not applied to AI
+lkp3<-lkp2%>%filter(ECOSYSTEM != "Aleutian Islands") 
+lkp3<-lkp3%>%filter(DEPTH<=-10 & DEPTH>=-200)%>%
+  mutate(long2=LONGITUDE+360)
+#AI points
+lkp4<-lkp2%>%filter(ECOSYSTEM == "Aleutian Islands")%>%
+  mutate(long2=ifelse(LONGITUDE<0, LONGITUDE+360, LONGITUDE))
+
+#plot
+ggplot()+
+ geom_sf(data=BASE%>% st_shift_longitude(), fill="gray90")+
+  geom_point(data=lkp3, aes(x=long2, y=LATITUDE), size=0.001, color="gray50")+
+  geom_point(data=lkp4, aes(x=long2, y=LATITUDE), size=0.001, color="gray50")+
+ geom_sf(data=ESR%>% st_shift_longitude(), fill=NA, mapping=aes(), size=1, color="black")+
+  geom_vline(xintercept = 180, size=1)+ #add international dateline
+  coord_sf(xlim=c(xmin, xmax), ylim=c(ymin,ymax))+
+  theme_void()
+```
+
+**R Code Chunk - 12.** Web service query for the most recent record in the Ecosystem_sub area "Southeastern Bering Sea". Note that spaces are filled with "%20". Names for each Ecosystem_sub area are presented in the previous query.  
 
 ```{r}
 httr::content(
@@ -318,7 +357,7 @@ httr::content(
 ```
 
 
-**R Code Chunk - 12.** Web service query to plot the full time series for the eastern Gulf of Alaska and eastern Aleutian Islands from 1985 - present. Note the comma to separate regions and the "%20" to fill spaces in the character strings.  
+**R Code Chunk - 13.** Web service query to plot the full time series for the eastern Gulf of Alaska and eastern Aleutian Islands from 1985 - present. Note the comma to separate regions and the "%20" to fill spaces in the character strings.  
 
 ```{r, message=FALSE}
 httr::content(
@@ -332,7 +371,7 @@ httr::content(
 ```
 
 
-**R Code Chunk - 13.**  Web service query to plot the annual averages for NMFS areas 640 and 650. Note that annual averaging is performed downstream of the web service query.  
+**R Code Chunk - 14.**  Web service query to plot the annual averages for NMFS areas 640 and 650. Note that annual averaging is performed downstream of the web service query.  
 
 ```{r, message=FALSE}
 httr::content(
@@ -359,7 +398,7 @@ A note of caution that when querying data from the database, these are large gri
 **R Code Chunk - 14.** Demonstration of connection to Oracle via R. For confidentiality, we have omitted our login credentials but users would substitute the UID and PWD parameter values here for your own AFKIN database credentials. In this case, the database connection is saved as the object "con" for later use. For assistance in configuring your computer for an Oracle connection through R, contact your IT help desk. The authors can also assist with technical questions regarding configuration. 
 
 ```{r}
-library(odbc) # For connecting to oracle database
+#library(odbc) # For connecting to oracle database
 
 #  Load the AKFIN database user name and password from an external file.
 #  This step can be circumvented by entering your credentials directly into the dbConnect() function below.
@@ -435,8 +474,7 @@ oisst<-dbFetch(dbSendQuery(con,
                             ON a.oi_id = b.id
                             where read_date='04-JUL-09'")))
 
-# Packages for mapping
-require(sf) 
+# More packages for mapping
 require(rnaturalearth)
 require(rnaturalearthdata)
 
