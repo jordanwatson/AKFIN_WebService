@@ -75,7 +75,7 @@ State and Federal waters of Alaska include numerous spatial strata that are rele
 
 To develop operational data products across Alaska’s suite of spatial strata, we undertook extensive point-in-polygon processing operations to apportion the individual latitude-longitude coordinates for all three SST data sets to each of the polygons from a suite of shapefiles (ADF&G management areas, NMFS management areas, Ecosystem regions [from NMFS Ecosystem Status Reports], Bering Sea Integrated Ecosystem Research Program [BSIERP] regions, Bristol Bay red king crab management areas, and St. Matthew blue king crab management areas) (Fig. 1). To avoid repeating the computationally intensive point-in-polygon operations, we created spatial lookup tables that are stored in the backend of the AKFIN Oracle database system. Thus, as data are downloaded daily from ERDDAP servers across the spatial extent of Alaska’s waters, each SST record is matched via a database join on latitude and longitude to the spatial strata in which it falls.   
 
-```{r, echo=FALSE,message=FALSE,warning=FALSE,fig.height=6}
+```{r, echo=FALSE,message=FALSE,warning=FALSE,fig.height=6,eval=FALSE}
 xmin <- 165
 xmax <- 230
 ymin <- 50
@@ -141,7 +141,8 @@ ggplot() +
   coord_map("albers",lat0=54,lat1=62,xlim=c(xmin,xmax),ylim=c(ymin,ymax)) + 
   theme_void()
 ```
-Figure 1. Spatial strata in Alaska for which sea surface temperature data have been clipped and aggregated within the AKFIN database backend. SST data for these strata can be queried and accessed several ways. 
+
+![Figure 1. Spatial strata in Alaska for which sea surface temperature data have been clipped and aggregated within the AKFIN database backend. SST data for these strata can be queried and accessed several ways.  ](Data/Figure_1_map.png)
 
 In addition to the spatial strata, each gridded SST location was also matched with the depth of the water at that location. The marmap library (Pante & Bouhet 2015) in R was used to extract the NOAA ETOPO1 bathymetric data [@Amante2009].
 
