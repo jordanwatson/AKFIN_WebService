@@ -57,13 +57,6 @@ ggplot(data = ecosystems.df, aes(x=long, y=lat, group = group)) +
 ## Web Service
 AKFIN has created a set of web services or web APIs for accessing the pre-summarized / spatially aggregated data for a set of different ecosystem and management areas. AKFIN downloads the CRW satellite SST dataset daily for the spatial extent of Alaska. Files are downloaded daily as two separate netCDF files - one for positive and one for negative longitudes. The daily data are then clipped by merging them with a spatial lookup table that encompasses the exclusive economic zone (EEZ) of Alaska. The data are merged into a single daily gridded dataset that includes 212,813 temperature records for each day. We have identified several spatial strata that are of particular interest from either the ecosystem or management perspective. These fields in the data are referred to as *Ecosystem_sub* or *nmfsarea*. The goal of the AKFIN web service is to streamline access to the average daily temperatures within each of the relevant strata.
 
-**Jordan - copy the code from the ESR_methods document to produce maps of the NMFS Areas and the Ecosystem_sub areas**
-Blah blah blah regions regions regions. 
-
-**Ecosystem_sub**
-**nmfsareas**
-
-
 
 ```{r cars}
 lkp <- readRDS("Data/crwsst_spatial_lookup_table.RDS") 
@@ -87,7 +80,7 @@ httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_
 Instead of a list, these data can easily be converted to a data frame (tibble). Note that we use "bind_rows" here instead of data.frame. This will have the same effect as data.frame but means we will not have to change the code when more dates are added in subsequent examples.
 
 ```{r}
-httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json") %>% 
+httr::content(httr::GET('https://apex.psmfc.org/akfin/data_marts/akmp/ecosystem_sub_crw_avg_sst?ecosystem_sub=Southeastern%20Bering%20Sea'), type = "application/json") %>%
   bind_rows
 ```
 
