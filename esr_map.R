@@ -31,11 +31,11 @@ points_sf = st_as_sf(lkp %>% dplyr::select(id,longitude,latitude,longitude2,lati
 efh_pts <- points_sf %>% st_transform(st_crs(esr)$proj4string)
 base <- base %>% st_transform(st_crs(esr)$proj4string)
 
-
+pdf("esr_map_depth_filters.pdf")
 ggplot() + 
   geom_sf(data=efh_pts,size=0.05,color="grey80") + 
   geom_sf(data=esr,fill=NA) + 
   geom_sf(data=base,fill="grey35",color="black") +
   coord_sf(xlim=c(-2538555, 1351449), ylim=c(43371,2434528))+
   theme_void()
-
+dev.off()
